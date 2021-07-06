@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Working with GRASS GIS: A guided tour</title>
+  <meta name="description" content="Exercise on raster time series">
+  <meta name="author" content="Sajid Pareeth">
+  <link rel="shortcut icon" href="grass.png">
+
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/codetabs.js"></script>
+  <script type="text/javascript" src="lib/highlights/highlight.pack.js"></script>
+  <link rel="stylesheet" href="lib/highlights/styles/default.css">
+  <link rel="stylesheet" href="css/grassdocs.css">
+  <link rel="stylesheet" href="css/codetabs.css">
+
+<style type="text/css">
+.hljs{
+    display: none;
+    /*padding: 0em;*/
+}
+</style>
+
+</head>
+<body>
+  <div id="container">
+	<h1>Working with GRASS GIS: A guided tour</h1>
+     <p style="text-align:center">
+    <div class="imagebox">
+        <img style="width: 40%;" src="images/sp_fig41.png" alt="display difference map" title="display difference map"><br>
+    </div></p>
+	
+    <h2><a name="Guidedtour">Basic overview of this session</a></h2>
+    <p>
+	In this session, we will go through the most commonly used spatial analysis techniques in GRASS GIS. The session is a hands-on with a common exercise which covers basic raster processing capabilities of GRASS GIS.
+    <p>
+     <h4>Course content</h4>
+   <ul>
+        <li><a href="#importdata">Geospatial data import (aggregated ECA&D climatic data time series)</a></li>
+		<li><a href="#visualdata">Visualize data</a></li>
+        <li><a href="#aggregate">Data aggregation</a></li>
+		<li><a href="#univar">Univariate statistics</a></li>
+		<li><a href="#mapalgebra">Raster map algebra</a></li>
+        <li><a href="#zonalstats">Zonal statistics</a></li>	
+		<li><a href="#extract">Extract raster data at points</a></li>		
+		<li><a href="#timeseries">Temporal data analysis using TGRASS modules</a></li>
+        <li><a href="#clusteranalysis">Cluster analysis to classify the European climatic zones</a></li>
+        <li><a href="#linearmodels">Linear models in GRASS GIS</a></li>
+		<li><a href="#Interpolation">Spatial interpolation in GRASS GIS</a></li>
+		<li><a href="#export">Raster data export from GRASS GIS</a></li>
+		<li><a href="#reading">Reading and importing different formats of data into GRASS GIS</a></li>
+<!--
+        <li>Interpolation from meteo-stations</li>
+-->
+    </ul>
+	
+	<h4>Data</h4>
+	<ul>
+		<li>Aggregated <a href="http://www.ecad.eu/" target="_blank">ECA&D</a> climatic data: monthly data of 30 years averages, 0.25° resolution</li>
+		<li>Related elevation model</li>
+		<li><a href="http://www.naturalearthdata.com/downloads/110m-cultural-vectors/" target="_blank">NaturalEarth</a> Admin0 country borders</li>
+	</ul>
+	
+		<h4>Data download</h4>
+	For this exercise, we will use some GeoTIFF files and the GRASS GIS location "ecad_ll"
+	<ul>
+		<li>Download the GeoTIFF files <a href="http://www.scientificpubs.com/data_share/ecad5_geotiffs_LL.zip" target="_blank">here</a></li>
+		<li>Download the GRASS GIS location <a href="http://www.scientificpubs.com/data_share/grassdata_ecad_LL.zip" target="_blank">here</a></li>
+		<li>Unzip the "grassdata_ecad_LL.zip" into "D:/grassdata" folder</li>
+	</ul>
+    
+    <h4>Workflow overview</h4>
+    <b>How do we work with spatial data in GRASS GIS?</b> 
+    <p>
+    Assuming we already have our maps in the GRASSDBASE (i.e., grassdata/location/mapset), the first step is to <b>import the datasets to GRASS GIS</b>. We will import the elevation data required for the exercise, and the rest of the data is already imported to the GRASS GIS mapset ecad50. 
+    <p>
+     <h2><a id="spatialanalysis">Spatial data analysis with GRASS GIS</a></h2>
+    <p>
+	Download the shared data. Copy the given GRASS GIS location to this path: D:/grassdata. There are two mapsets in the provided location "ecad_ll":
+	<ol>
+        <li> PERMANENT
+        <li> ecad50 - Where all the ECAD datasets are stored
+    </ol>
+	<p>
+	We will now create a new mapset "user1" in the same location "ecad_ll" to do all our analysis. To make use of the ecad dataset, we will add the mapset "ecad50" in the search path. We can run the commands from the command line or use the main GUI and copy the corresponding commands for future replication of the workflow. Note the <i>"Copy"</i> button in the GUI of each module. Maybe you might want to get help about the options and flags of the different commands, e.g. <code>r.colors --help</code>
+    <p>
+    <pre>
+ <!--        <code class="neutral">
+grass72 D:/grassdata/ecad_ll/user1/ -c --gui
+g.list rast 
+g.mapsets -p
+g.mapsets mapset=ecad50 operation=add
+g.mapsets -p
+g.list rast
+        </code> -->
+        <code class="bash">
+# Launch GRASS GIS, -c creates new mapset user1, --gui launches the gui
+# If in Windows, use Power shell
+grass72 D:/grassdata/ecad_ll/user1/ -c --text
+# If in Windows Power shell, type in bash and enter
+bash
+# set the region to default
+g.region -d
+# Add the missing path to PATH variable in bash
+export PATH=/c/OSGeo4W64/apps/grass/grass-7.4.0/scripts:$HOME/AppData/Roaming/GRASS7/addons/scripts:$PATH
+# List all the raster maps in all the mapsets in the search path
+g.list type=rast 
+# List all the mapsets in the search path
+g.mapsets -p
+# List all the mapsets in the location
+g.mapsets -l
+# Add the mapset ecad50 to the search path
+g.mapsets mapset=ecad50 operation=add
+# List all the mapsets in the search path
+g.mapsets -p
+# List all the raster maps in all the mapsets in the search path
+g.list type=rast
+        </code>
+    </pre>
+<h3><a name="importdata">Import data into GRASS GIS</a></h3>
+    <p>
+	We will now import the elevation map, provided as a GeoTIFF to the current mapset. Then set the color palette to elevation
+	</p>
+   <pre>
+<!--         <code class="neutral">
+cd /d/ecad5_geotiffs_LL
+r.in.gdal input=elev_0.25deg_reg_v6.0.tif output=elev_ecad
+r.colors map=elev_ecad color=elevation
+        </code> -->
+        <code class="bash">
+# Change dirctory to the one with TIFF files
+cd /d/ecad5_geotiffs_LL
+# Import the elevation raster map in GeoTIFF format into GRASS GIS
+r.in.gdal input=elev_0.25deg_reg_v6.0.tif output=elev_ecad
+# Set the color palette of the elevation raster map to 'elevation'
+r.colors map=elev_ecad color=elevation
+        </code>
+    </pre>	
+<h3><a name="visualdata">Visualize data</a></h3>	
+   <p>
+	Let us now display the elevation map and add decorations.
+	</p>
+  <pre>
+ <code class="bash">
+# Open a monitor
+d.mon wx0
+
+# Display a raster map
+d.rast map=elev_ecad
+
+# Display a vector map
+d.vect map=country_boundaries type=boundary
+
+# Add raster legend
+d.legend -t -s -b raster=elev_ecad title=ELEVATION title_fontsize=20 font=sans fontsize=18
+
+# Add North arrow
+d.northarrow style=1b text_color=black
+
+ </code>
+</pre>	
+    <p style="text-align:center">
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/sp_fig1.png" alt="display DEM" title="display DEM"><br>
+        Elevation in meters
+    </div></p>
+
+<h3><a name="aggregate">Data aggregation in GRASS GIS</a></h3>
+<p>
+Let us check how to aggregate multiple maps at different time periods based on different statistical methods</p>
+<p>
+Let us create the following aggregated maps:
+  <ul>
+        <li>annual precipitation for 1951-1980 and 1981-2010 </li>
+        <li>mean annual temperature for 1981-2010</li>
+        <li>minimum annual temperature for 1981-2010</li>
+    </ul>
+   <pre>
+<!--         <code class="neutral">
+g.region rast=precip_0_25deg_1951_1980_monthly_sums.01
+g.region -p
+g.list rast pattern="precip_0_25deg_1951_1980_monthly_sums.*"
+r.series in=`g.list rast pattern="precip_0_25deg_1951_1980_monthly_sums.*" sep=","` out=precip_0_25deg.1951.1980.sum method=sum
+r.colors precip_0_25deg.1951.1980.sum col=precipitation
+g.list rast pattern="precip_0_25deg.1981_2010.*"
+r.series in=`g.list rast pattern="precip_0_25deg.1981_2010.*" sep=","` out=precip_0_25deg.1981.2010.sum method=sum
+r.colors precip_0_25deg.1981.2010.sum col=precipitation
+r.series in=`g.list rast pattern="tmean_0_25deg.1981_2010*" sep=","` out=tmean_0_25deg.1981_2010.avg method=average
+r.colors tmean_0_25deg.1981_2010.avg col=celsius
+        </code> -->
+        <code class="bash">
+# Set the computational region
+g.region rast=precip_0_25deg_1951_1980_monthly_sums.01
+# Display the region
+g.region -p
+# list all monthly maps for the period 1951-1980 needed for the annual precipitation aggregation
+g.list rast pattern="precip_0_25deg_1951_1980_monthly_sums.*"
+# Now use the r.series command to create annual precip for the period 1951 to 1980
+r.series in=`g.list rast pattern="precip_0_25deg_1951_1980_monthly_sums.*" sep=","` out=precip_0_25deg.1951.1980.sum method=sum
+# Set the color
+r.colors precip_0_25deg.1951.1980.sum col=precipitation
+# list all monthly maps for the period 1981-2010 needed for the annual precipitation aggregation
+g.list rast pattern="precip_0_25deg.1981_2010.*"
+# Now use the r.series command to create annual precip for the period 1981 to 2010
+r.series in=`g.list rast pattern="precip_0_25deg.1981_2010.*" sep=","` out=precip_0_25deg.1981.2010.sum method=sum
+# Set the color
+r.colors precip_0_25deg.1981.2010.sum col=precipitation
+# Aggregate the temperature maps average annual temperature
+r.series in=`g.list rast pattern="tmean_0_25deg.1981_2010*" sep=","` out=tmean_0_25deg.1981_2010.avg method=average
+# Set the color
+r.colors tmean_0_25deg.1981_2010.avg col=celsius
+        </code>
+ </pre>
+ 
+     <p style="text-align:center">
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/sp_fig2.png" alt="display annual mean temp" title="display annual mean temp"><br>
+        Annual Mean temperature (1981 - 2010)
+    </div></p>
+ 
+ <b>Task:</b>Now try aggregating the mean temperature maps for the period 1951 to 1980 to create annual mean temperature for the same period.
+ Display the annual precipitation and temperature maps with legend and compare the legends using WxGUI or d.mon.
+For more details on r.series check <a href="https://grass.osgeo.org/grass72/manuals/r.series.html" target="_blank">here</a>.
+</p>
+<h3><a name="univar">Univariate statistics in GRASS GIS</a></h3>
+<p> Now lets compute univariate statistics of the developed annual maps over the entire area and also over a particular country.</p>
+<pre>
+<!--         <code class="neutral">
+r.univar tmean_0_25deg.1981_2010.avg -e -g
+r.univar precip_0_25deg.1981.2010.sum -e -g
+v.db.select country_boundaries|head -5
+v.db.select country_boundaries|grep Netherlands
+r.mask vect=country_boundaries cats=118
+r.univar tmean_0_25deg.1981_2010.avg -e -g
+r.univar precip_0_25deg.1981.2010.sum -e -g
+r.mask -r
+        </code> -->
+        <code class="bash">
+# Compute extended univariate statistics
+r.univar tmean_0_25deg.1981_2010.avg -e -g
+# Compute extended univariate statistics
+r.univar precip_0_25deg.1981.2010.sum -e -g
+# Get a feel of the vector data and the attributes
+v.db.select country_boundaries|head -5
+# Find the attributes related to The Netherlands
+v.db.select country_boundaries|grep Netherlands
+# Mask out all the area other than The Netherlands
+r.mask vect=country_boundaries cats=118
+# Repeat the univariate statistics for The Netherlands
+r.univar tmean_0_25deg.1981_2010.avg -e -g
+# Repeat the univariate statistics for The Netherlands
+r.univar precip_0_25deg.1981.2010.sum -e -g
+# Remove the mask
+r.mask -r
+        </code>
+ </pre>
+ 
+     <p style="text-align:center">
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/sp_fig31.png" alt="display univar stats" title="display univar stats"><br>
+        Univariate statistics of annual precipitation (1981 to 2010)
+    </div></p>
+ 
+ <h3><a name="mapalgebra">Raster map algebra using map calculator</a></h3>
+<p> Let us compute a difference map from the two 30 years aggregated precipitation maps.</p>
+<pre>
+<!--         <code class="neutral">
+g.region rast=precip_0_25deg.1981_2010.06.sum -p
+r.mapcalc "diff_1951_1981_2010 = precip_0_25deg.1951.1980.sum - precip_0_25deg.1981.2010.sum"
+r.colors -n diff_1951_1981_2010 color=differences
+        </code> -->
+        <code class="bash">
+# we want to be sure to have the computational region set			
+g.region rast=precip_0_25deg.1981_2010.06.sum -p
+# Map algebra using map calculator
+r.mapcalc "diff_1951_1981_2010 = precip_0_25deg.1951.1980.sum - precip_0_25deg.1981.2010.sum"
+# apply inverse “differences” color table
+r.colors raster=diff_1951_1981_2010 color=differences
+# Now lets convert all the tmean maps into kelvin
+# For that we need to apply the same equation to 24 maps.
+g.list rast pattern=tmean*
+g.list rast pattern=tmean* |wc -l
+# Lets do it using a for loop
+for i in `g.list rast pattern=tmean*`; do 
+	r.mapcalc "${i}.Kelvin = ${i} + 273.15"
+done
+# Now check if the maps are there
+g.list rast pattern=tmean*Kelvin
+# set the colors 
+for i in `g.list rast pattern=tmean*Kelvin`; do 
+	r.colors map=${i} color=kelvin
+done
+</code>
+ </pre>
+<p><b>Task:</b>Visualize the difference map with the legend and compute univariate statistics over The Netherlands.</p>
+     <p style="text-align:center">
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/sp_fig41.png" alt="display difference map" title="display difference map"><br>
+        Difference between precipitation (1951-1980) and (1981-2010)
+    </div></p>
+
+ <h3><a name="zonalstats">Zonal statistics in GRASS GIS</a></h3>
+ <p>We want to extract a table with basic statistics over all the countries in Europe.</p>
+ <p>Main steps are:</p>
+   <ul>
+        <li>Explore the attributes of the vector data</li>
+        <li>Rasterize the vector data</li>
+        <li>Generate zonal statistics based on r.univar</li>
+    </ul>
+     <pre>
+<!--         <code class="neutral">
+v.info -c country_boundaries
+v.db.select country_boundaries column="NAME"
+g.region rast=precip_0_25deg.1981.2010.sum -p
+v.to.rast country_boundaries out=country_boundaries use=cat labelcolumn="NAME"
+r.category country_boundaries
+r.univar -t precip_0_25deg.1981.2010.sum zones=country_boundaries sep="," output=countries_precip_1981_2010_sum.csv
+r.univar -t diff_1951_1981_2010 zones=country_boundaries sep="," output=countries_precip_1951_1980_vs_1981_2010_sum.csv
+        </code> -->
+        <code class="bash">
+# check the available column (or use wxGUI attribute manager)
+v.info -c country_boundaries
+# look at country names
+v.db.select country_boundaries column="NAME"
+# we want to be sure to have the computational region set	
+g.region rast=precip_0_25deg.1981.2010.sum -p
+# for zonal statistics, we convert the vector polyons to raster model
+v.to.rast country_boundaries out=country_boundaries use=cat labelcolumn="NAME"
+# check raster polygons
+r.category country_boundaries
+# get the statistics for each country as a table
+r.univar -t precip_0_25deg.1981.2010.sum zones=country_boundaries sep="," output=countries_precip_1981_2010_sum.csv
+r.univar -t diff_1951_1981_2010 zones=country_boundaries sep="," output=countries_precip_1951_1980_vs_1981_2010_sum.csv
+        </code>
+ </pre>
+ <h3><a name="extract">Extract data</a></h3>
+ <p>Let us see how to extract raster values at particular observation points given as a vector layer. Here we will first create a simulated observation points  using random sampling.</p>
+  <pre>
+ <code class="bash">
+# Create 10 random points over the computational region
+r.random input=tmean_0_25deg.1981_2010.avg n=10 vector=obs_points
+# Extract raster tmean 1981-2010 avg values at these 10 points
+r.what -n map=tmean_0_25deg.1981_2010.avg points=obs_points sep=comma output=extract_single.txt
+# Now extract values from multiple raster maps
+r.what -n map=`g.list rast pattern="tmean_0_25deg.1981_2010*" sep=comma` points=obs_points sep=comma output=extract_multiple.txt
+ </code>
+  </pre>
+<p><b>Task</b>:Check now the module <a href="https://grass.osgeo.org/grass72/manuals/v.what.rast.html" target="_blank">v.what.rast</a> and find out how to query and add raster value into the vector map attribute table.</p>
+ 
+  <h3><a name="timeseries">Time series analysis</a></h3>
+ <p> In this session, let us see how to create a temporal data base to store time series data. We will create an empty database and then add monthly maps to it. </p>
+ 
+  <pre>
+ <code class="bash">
+# For windows user, add scripts path in the Power Shell
+export PATH=/c/OSGeo4W64/apps/grass/grass-7.4.0/scripts:$HOME/AppData/Roaming/GRASS7/addons/scripts:$PATH
+# Ignore the sqlite warnings in the following commands
+# Create an empty temporal database (STRDS) for storing the monthly long term average maps from 1951 to 1980
+t.create.py output=tmean_monthly_1951_1980.avg type=strds semantictype=mean temporaltype=absolute title="monthly tmean 1951 to 1980 avg" description="monthly tmean 1951 to 1980 avg"
+# Create a text file with map names in order which has to be registered in the created database (STRDS)
+g.list -m rast pattern=tmean*1951_1980*Kelvin >> filenames_tmean1.txt
+# Register the maps to the created temporal database (STRDS)
+t.register.py -i input=tmean_monthly_1951_1980.avg type=rast file=filenames_tmean1.txt start=1980-01-01 increment="1 months" --o
+# List the maps in the temporal database (STRDS)
+t.rast.list.py tmean_monthly_1951_1980.avg
+# Univariate statistics of all the maps in the STRDS and save to a text file
+t.rast.univar.py tmean_monthly_1951_1980.avg sep=comma >> univar_stats_tmean_1951_1980.txt
+# Aggregate to 1 year
+t.rast.aggregate.py input=tmean_monthly_1951_1980.avg output=tmean_annual_1951_1980.avg basename=tmean_annual_1951_1980.avg granularity="1 years" method=average where="start_time >= '1980-01-01'"
+# Aggregate to 3 months
+t.rast.aggregate.py input=tmean_monthly_1951_1980.avg output=tmean_seasonal_1951_1980.avg basename=tmean_seasonal_1951_1980.avg granularity="3 months" method=average where="start_time >= '1980-01-01'"
+ </code>
+  </pre>
+  
+<p><b>Task</b>: Repeat the above step and create a new STRDS for monthly tmean maps from 1981 to 2010.</p>
+
+<b>Map algebra using temporal STRDS</b>
+<p> Temporal algebra is powerful way of executing different equations with multiple temporal databases. For example if we want to compute the difference between long term monthly averages in the period 1951-1980 and 1981-2010, It can be done in one step using TGRASS module. You need to finish the above task to do the following step.</p>
+ <pre>
+ <code class="bash">
+# For windows user, add scripts path in the Power Shell
+export PATH=/c/OSGeo4W64/apps/grass/grass-7.2.2/scripts:$PATH
+# Ignore the sqlite warnings in the following commands
+# Create a new temporal database (STRDS) of difference maps between monthly maps of period 1951-1980 and 1981-2010
+# Make sure you already have created the STRDS "tmean_monthly_1981_2010.avg"
+t.rast.mapcalc.py input=tmean_monthly_1951_1980.avg,tmean_monthly_1981_2010.avg expression="tmean_monthly_1951_1980.avg - tmean_monthly_1981_2010.avg" output=tmean_monthly_diff.avg basename=tmean_monthly_diff.avg
+# Check the list raster maps in the new STRDS
+t.rast.list.py tmean_monthly_diff.avg
+# Univariate statistics of all the maps in the STRDS and save to a text file
+t.rast.univar.py tmean_monthly_diff.avg sep=comma >> univar_stats_tmean_diff_avg.txt
+ </code>
+  </pre>
+
+<p><b>Task</b>: Extract the raster map values from the temporal database "tmean_monthly_diff.avg" from the observation points created in the above <a href="#extract">section</a> using <a href="https://grass.osgeo.org/grass73/manuals/t.rast.what.html" target="_blank">t.rast.what</a> </p>
+ 
+<h3><a name="clusteranalysis">Cluster analysis in GRASS GIS</a></h3>
+<p>Let us now do climatic characterisation of Europe using unsupervised classification</p>
+ <p>Main steps are:</p>
+   <ul>
+        <li>Group the images</li>
+        <li>Generate signatures using a clustering algorithm</li>
+        <li>Classify using maximum likelihood algorithm</li>
+    </ul>
+
+     <pre>
+<!--         <code class="neutral">
+g.list rast pattern="*_0_25deg.1981_2010.*.*"
+i.group group=ecad_1981_2010 subgroup=ecad_1981_2010 input=`g.list rast pattern="*_0_25deg.1981_2010.*.*" sep=","`
+i.cluster group=ecad_1981_2010 subgroup=ecad_1981_2010 sig=ecad_1981_2010 classes=5 separation=0.5
+i.maxlik group=ecad_1981_2010 subgroup=ecad_1981_2010 sig=ecad_1981_2010 output=ecad_1981_2010.class rej=ecad_1981_2010.class.rej
+        </code> -->
+        <code class="bash">
+# pick the variables of interest
+g.list rast pattern="*_0_25deg.1981_2010.*.*"
+# add maps to an imagery group for easier management
+i.group group=ecad_1981_2010 subgroup=ecad_1981_2010 input=`g.list rast pattern="*_0_25deg.1981_2010.*.*" sep=","`
+# statistics for unsupervised classification
+i.cluster group=ecad_1981_2010 subgroup=ecad_1981_2010 sig=ecad_1981_2010 classes=5 separation=0.5
+# Maximum Likelihood unsupervised classification
+i.maxlik group=ecad_1981_2010 subgroup=ecad_1981_2010 sig=ecad_1981_2010 output=ecad_1981_2010.class rej=ecad_1981_2010.class.rej
+        </code>
+ </pre> 
+ 
+     <p style="text-align:center">
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/sp_fig5.png" alt="display climatic zones" title="display climatic zones"><br>
+        Climatic Zones of Europe
+    </div></p>
+    <p>
+	Check the manual of  <a href="https://grass.osgeo.org/grass72/manuals/i.cluster.html" target="_blank">i.cluster</a> and <a href="https://grass.osgeo.org/grass72/manuals/i.maxlik.html" target="_blank">i.maxlik</a>.</p>
+	Check if the result make sense comparing to the <a href="www.schweizerbart.de/resources/downloads/paper_free/55034.pdf" target="_blank">Kottek, M. et al., 2006</a></p>
+<h3><a name="linearmodels">Linear models in GRASS GIS</a></h3>
+<p>Let us now look at the relation ship between mean temperature, elevation and latitude.</p>
+    <pre>
+<!--         <code class="neutral">
+r.mapcalc "latitude = y()"
+r.regression.line mapx=elev_ecad mapy=tmean_0_25deg.1981_2010.avg
+r.mapcalc "tmean_model_line = 6.143929 + 0.002434 * elev_ecad"
+r.mapcalc "tmean_model_diff_line = tmean_model_line - tmean_0_25deg.1981_2010.avg"
+r.colors tmean_model_diff_line color=differences
+r.regression.multi mapx=elev_ecad,latitude mapy=tmean_0_25deg.1981_2010.avg
+r.mapcalc "tmean_model_multi = 40.722804 + -0.004234 * elev_ecad + -0.629130 * latitude"
+r.mapcalc "tmean_model_diff_multi = tmean_model_multi - tmean_0_25deg.1981_2010.avg"
+r.colors tmean_model_diff_multi color=differences
+        </code> -->
+        <code class="bash">
+# Create a latitude map
+r.mapcalc "latitude = y()"
+# linear regression model
+r.regression.line mapx=elev_ecad mapy=tmean_0_25deg.1981_2010.avg
+# Apply the model using the model variables
+r.mapcalc "tmean_model_line = 6.143929 + 0.002434 * elev_ecad"
+# Calculate a difference map
+r.mapcalc "tmean_model_diff_line = tmean_model_line - tmean_0_25deg.1981_2010.avg"
+# Apply differences color palette
+r.colors tmean_model_diff_line color=differences
+# Multiple linear regression model
+r.regression.multi mapx=elev_ecad,latitude mapy=tmean_0_25deg.1981_2010.avg
+# Apply the model using the model variables
+r.mapcalc "tmean_model_multi = 40.722804 + -0.004234 * elev_ecad + -0.629130 * latitude"
+# Calculate a difference map
+r.mapcalc "tmean_model_diff_multi = tmean_model_multi - tmean_0_25deg.1981_2010.avg"
+# Apply differences color palette
+r.colors tmean_model_diff_multi color=differences
+        </code>
+ </pre> 
+
+    <p style="text-align:center">
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/sp_fig6.png" alt="display regression output" title="display regression output"><br>
+        Multiple linear regression model
+    </div></p> 
+
+<p>
+	Visualize the model outputs and difference maps. Please check the manual of  <a href="https://grass.osgeo.org/grass72/manuals/r.regression.line.html" target="_blank">r.regression.line</a> and <a href="https://grass.osgeo.org/grass72/manuals/.regression.multi.html" target="_blank">r.regression.multi</a>.</p>
+<p>To use R functionalities inside GRASS GIS making use of the datasets in the mapset refer <a href="https://grasswiki.osgeo.org/wiki/R_statistics" target="_blank">here</a></p>
+
+<!--
+<h4>GRASS GIS and R</h4>
+<p>Let us now check how to do the same model above using R inside GRASS GIS</p>
+install.packages("rgrass7", dependencies = TRUE)
+-->
+
+<h3><a name="Interpolation">Interpolation in GRASS GIS</a></h3>
+<p>GRASS GIS offers a wide range of interpolation algorithms. List of interpolation methods available in GRASS GIS are given <a href="https://grasswiki.osgeo.org/wiki/Interpolation" target="_blank">here</a></p>
+    <pre>
+<!--         <code class="neutral">
+g.region rast=elev_ecad -p
+r.random input=tmean_0_25deg.1981_2010.avg n=500 vector_output=t_mean_europe_meteo 
+d.mon wx0
+d.rast tmean_0_25deg.1981_2010.avg
+d.vect t_mean_europe_meteo icon=basic/circle
+d.grid 10
+r.mapcalc "sea = if(isnull(elev_ecad), 1, null() )"
+r.mask -i sea
+v.info -c t_mean_europe_meteo
+v.surf.idw t_mean_europe_meteo output=t_mean_europe_meteo_idw column=value
+r.colors t_mean_europe_meteo_idw color=celsius
+v.surf.rst t_mean_europe_meteo elev=t_mean_europe_meteo_rst layer=1 zcolumn=value
+r.colors t_mean_europe_meteo_rst color=celsius
+r.mask -r
+
+        </code> -->
+        <code class="bash">
+# set the region
+g.region rast=elev_ecad -p
+# extract 500 random points
+r.random input=tmean_0_25deg.1981_2010.avg n=500 vector_output=t_mean_europe_meteo 
+# open a monitor
+d.mon wx0
+# visualize the raster and vector maps with a grid
+d.rast tmean_0_25deg.1981_2010.avg
+d.vect t_mean_europe_meteo icon=basic/circle
+d.grid 10
+# set the sea mask to avoid interpolation over sea
+r.mapcalc "sea = if(isnull(elev_ecad), 1, null() )"
+r.mask -i sea
+# check the attributes of the random points
+v.info -c t_mean_europe_meteo
+# Apply IDW interpolation
+v.surf.idw t_mean_europe_meteo output=t_mean_europe_meteo_idw column=value
+# Apply celsius color palette
+r.colors t_mean_europe_meteo_idw color=celsius
+# Apply Spline interpolation
+v.surf.rst t_mean_europe_meteo elev=t_mean_europe_meteo_rst layer=1 zcolumn=value
+# Apply celsius color palette
+r.colors t_mean_europe_meteo_rst color=celsius
+# remove mask
+r.mask -r
+        </code>
+ </pre> 
+      <p style="text-align:center">
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/sp_fig7.png" alt="display idw interpolation" title="display idw interpolation"><br>
+        IDW interpolated map of Tmean
+    </div></p>
+         <p style="text-align:center">
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/sp_fig8.png" alt="display spline interpolation" title="display spline interpolation"><br>
+        Spline interpolated map of Tmean
+    </div></p>
+<h3><a name="export">Raster data export from GRASS GIS</a></h3>
+
+	<p>Raster module <a href="https://grass.osgeo.org/grass72/manuals/r.out.gdal.html" target="_blank">r.out.gdal</a> are used to export raster data from GRASS GIS to different formats. The formats supported are listed <a href="http://www.gdal.org/formats_list.html" target="_blank">here</a> and depends upon the GDAL installation. </p> 
+	<pre>
+        <code class="bash">
+#Export the raster map tmean_0_25deg.1981_2010.avg  into geotiff format
+r.out.gdal input=tmean_0_25deg.1981_2010.avg  output=tmean_0_25deg.1981_2010_avg.tif
+        </code>
+ </pre> 
+
+ <h3><a name="reading">Reading different formats of data</a></h3>
+ 
+<b>GLDAS</b>
+<p> For data downloaded from GLDAS (https://hydro1.gesdisc.eosdis.nasa.gov/data/GLDAS/GLDAS_NOAH025_3H.2.1/) you can use gdal tools first to convert to tiff and then use r.in.gdal to import to GRASS GIS. A sample data can be downloaded from <a href="http://www.scientificpubs.com/data_share/other_data.zip" target="_blank">here</a></p>
+
+	<pre>
+        <code class="bash">
+# Get the details of the input GLDAS file in nc4 format (eg: GLDAS_NOAH025_3H.A20000101.0300.021.nc4)
+gdalinfo GLDAS_NOAH025_3H.A20000101.0300.021.nc4
+# Convert the required parameter into geotiff
+gdal_translate NETCDF:"GLDAS_NOAH025_3H.A20000101.0300.021.nc4":Qair_f_inst GLDAS_NOAH025_3H_A20000101.0300.021_Qair.tif
+# Import the data into GRASS GIS
+r.in.gdal in=GLDAS_NOAH025_3H_A20000101.0300.021_Qair.tif out=GLDAS_NOAH025_3H_A20000101.0300.021_Qair -o
+# Clip to your area of interest (computational region)
+r.mapcalc "GLDAS_NOAH025_3H_A20000101.0300.021_Qair_clip = GLDAS_NOAH025_3H_A20000101.0300.021_Qair" --o
+# Remove the bigger raster data
+g.remove -f rast name=GLDAS_NOAH025_3H_A20000101.0300.021_Qair 
+        </code>
+ </pre> 
+  
+    <p style="border-top-style: solid; border-width: 5px; border-color: rgb(130, 130, 130); padding-top: 5px;" align="center">
+    <h2>Other (very) useful links</h2>
+    <ul>
+        <li>GRASS GIS wiki: <a href="https://grasswiki.osgeo.org/wiki/GRASS-Wiki" target="_blank">https://grasswiki.osgeo.org/wiki/GRASS-Wiki</a></li>
+        <li>GRASS GIS and R for time series processing: <a href="https://grasswiki.osgeo.org/wiki/Temporal_data_processing/GRASS_R_raster_time_series_processing" target="_blank">https://grasswiki.osgeo.org/wiki/Temporal_data_processing/GRASS_R_raster_time_series_processing</a></li>
+    </ul>
+    <h2>References</h2>
+    <ul>
+        <li>Related books: <a href="https://grass.osgeo.org/documentation/books/" target="_blank">https://grass.osgeo.org/documentation/books/</a></li>
+        <li>Related tutorials and articles: <a href="https://grass.osgeo.org/documentation/tutorials/" target="_blank">https://grass.osgeo.org/documentation/tutorials/</a></li>
+    </ul>
+    </p>
+    <hr>
+    <p><i>This tutorial is adapted from <a href="https://geostat-course.org/" target="_blank">Geostat</a> exercises prepared by <a href="https://grassbook.org/neteler/" target="_blank">Markus Neteler</a></i> and related content can be found in his <a href="https://courses.neteler.org/blog/" target="_blank">blog</a> . </p>
+    <p><i>Last changed: 02 Nov 2017</i></p>
+    <p>
+    <a href="http://grass.osgeo.org/grass72/manuals/">GRASS GIS manual main index</a> |
+    <a href="http://grass.osgeo.org/grass72/manuals/topics.html">Topics index</a> |
+    <a href="http://grass.osgeo.org/grass72/manuals/keywords.html">Keywords Index</a> |
+    <a href="http://grass.osgeo.org/grass72/manuals/full_index.html">Full index</a> | 
+    <a href="http://grass.osgeo.org/grass72/manuals/raster.html">Raster index</a> | 
+    <a href="http://grass.osgeo.org/grass72/manuals/vector.html">Vector index</a> |
+    <a href="http://grass.osgeo.org/grass72/manuals/temporal.html">Temporal index</a> |
+    </p>
+    <p>
+    <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" src="images/ccbysa.png"></a>
+    <br>
+   Adapted from hands-on to GIS and Remote Sensing with GRASS GIS by Veronica Andreo, Sajid Pareeth and Paulo van Breugel is licensed under a <b><a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative Commons Attribution-ShareAlike 4.0 International License</a></b> - Thanks to <a href="http://www4.ncsu.edu/~vpetras/index.html" target="_blank"><b>Vaclav Petras</b></a> for the style.
+    </p>
+</body>
+</html>
