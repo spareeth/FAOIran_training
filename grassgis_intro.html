@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Introduction to GRASS GIS</title>
+  <meta name="description" content="GRASS GIS course">
+  <meta name="author" content="Sajid Pareeth">
+  <link rel="shortcut icon" href="grass.png">
+
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/codetabs.js"></script>
+
+<!--
+<link rel="stylesheet" href="http://yandex.st/highlightjs/8.0/styles/default.min.css">
+<script src="http://yandex.st/highlightjs/8.0/highlight.min.js"></script>
+-->
+
+  <script type="text/javascript" src="lib/highlights/highlight.pack.js"></script>
+  <link rel="stylesheet" href="lib/highlights/styles/default.css">
+  <link rel="stylesheet" href="css/grassdocs.css">
+  <link rel="stylesheet" href="css/codetabs.css">
+
+<style type="text/css">
+.hljs{
+    display: none;
+    /*padding: 0em;*/
+}
+</style>
+
+</head>
+
+<body>
+
+  <div id="container">
+    <a href="https://grass.osgeo.org" title="GRASS GIS"><img src="images/grassgis_logo_colorlogo_text_whitebg.png" width="9.5%" height="9.5%" align="right" alt="GRASS GIS logo"></a>
+    <a href="https://un-ihe.org/" title="IHE Delft"><img src="images/IHE_logo.png" height="100%" align="left" alt="IHE Delft logo"></a>
+    <h1 class="notoc" align="center">Spatio-temporal analysis with GRASS GIS</h1>
+    <h3 class="notoc" align="center">IHE Delft Institute for Water Education</h3>
+<!--
+    <h3 class="notoc" align="center">November 3rd, 2017</h3>
+-->
+    <h3 class="notoc" align="center">The Netherlands</h3>
+    <p class="notoc" align="center">
+    <a href="https://www.un-ihe.org/sajid-pareeth" target="_blank">Dr. Sajid Pareeth</a>
+    </p>
+    <h2>Outline</h2>
+    <ul>
+		<li><a href="index.html">Installation steps</a></li>
+        <li><a href="grassgis_intro.html">Introduction to GRASS GIS</a></li>
+        <li><a href="grassgis_start.html">Start with GRASS GIS - first steps</a></li>
+        <li><a href="grassgis_explore.html">Explore features in GRASS GIS</a></li>
+        <li><a href="exercise1.html">Exercise 1 - Seasonal aggregation and statistical analysis</a></li>
+        <li><a href="exercise2.html">Exercise 2 - Spatio-temporal analysis of climatic data</a></li>
+    </ul>
+    <p style="border-top-style: solid; border-width: 5px; border-color: rgb(130, 130, 130); padding-top: 5px; padding_bottom: 5px;" align="center"></p>
+    <h2><a name="grassgisintro">Introduction to GRASS GIS</a></h2>
+    Working with GRASS GIS is not much different than any other GIS. Just a few commonly used terms need to be introduced first.
+    <div class="imagebox">
+		<img style="width: 35%;" src="images/start_screen_grass723.png" alt="GRASS start screen" title="GRASS start screen"><br>
+        GRASS GIS start screen: GRASS database, Location and Mapset
+    </div>
+    <h3>Basic concepts: GRASS DATABASE, LOCATION and MAPSET</h3>
+    The <b>GRASS DATABASE</b> (also called "GISDBASE") is an existing directory which contains all GRASS GIS projects. These projects are organized in subdirectories called LOCATIONs.<br>
+    A <b>LOCATION</b> is defined by its coordinate system, map projection and geographical boundaries. All data within one Location has the same coordinate reference system.<br>
+    <b>MAPSETs</b> are subdirectories within Locations. In a <b>MAPSET</b> you can organize GIS maps thematically, geographically, by project or however you prefer. Mapsets can also be named after users, for example.<br>
+    <p>Within each Location, a mandatory <b>PERMANENT</b> mapset exists. This mapset can contain commonly used data such as base maps. The PERMANENT mapset also contains metadata related to the Location it belongs to, e.g. its projection. When GRASS GIS is started, it connects to a Database, Location and Mapset specified by the user.</p>
+    <br>
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/grass_database.png" alt="GRASS DATABASE, LOCATIONs, and MAPSETs" title="GRASS DATABASE, LOCATIONs, and MAPSETs"><br>
+        GRASS DATABASE, LOCATIONs and MAPSETs
+    </div>
+    <br>
+	<b>Why this structure?</b>
+	<ul>
+		<li>GRASS GIS has a native format for raster and vector data, therefore they must be imported (r|v.import, r.in.gdal, v.in.ogr, among others) or linked (r|v.external) into a GRASS Location/Mapset.</li>
+	</ul>
+	<b>What are the advantages?</b>
+	<ul>
+		<li>GRASS DATABASE, LOCATIONs and MAPSETs are folders that <b>can be easily (zipped and) shared with other users</b>. The latter just need to (unzip and) move into their GRASS DATABASE (and proper location in case of sharing a mapset).</li>
+		<li>The GRASS DATABASE can be local or remote, and special permissions can be set to specific mapsets in a LOCATION (the PERMANENT mapset is accessible from all other mapsets and users).</li>
+		<li>Since all data in a LOCATION have necesarily the same CRS, the problem of non-matching map projections, often encountered in other GIS programs, does not exist.</li>
+	</ul>
+	Further details can be found at the <a href="https://grass.osgeo.org/grass78/manuals/grass_database.html" target="_blank">GRASS database</a> manual page.
+	
+    <h3>Data formats supported</h3>
+    GRASS GIS is able to read most raster and vector data formats directly (mainly done through the <a href="http://www.gdal.org/" target="_blank">GDAL/OGR</a> library). As mentioned above, GRASS GIS has its own internal formats to manage raster and vector data, therefore your data have to be imported or linked into a GRASS LOCATION/MAPSET for further processing and analysis.<br><br>
+    Unlike other GIS, <b>GRASS GIS native vector format is topological</b>, this means that adjacent geographic components in a single vector map are related to each other. For example, in a non-topological GIS if two areas share a common border that border would be digitized twice and also stored in a duplicate manner. In a topological GIS such as GRASS GIS, this border exists only once and it is shared between these two areas. The topological representation of vector data helps to produce and maintain vector maps with clean geometry. Moreover, it enables certain analyses that can not be conducted with non-topological or spaghetti data.<br>
+    <div class="imagebox">
+        <img style="width: 50%;" src="images/datatypes.png" alt="Vector data types" title="Vector data types"><br>
+        Vector data types in GRASS GIS
+    </div>
+	<h3>Data types in GRASS GIS</h3>
+    GRASS GIS can handle the data types listed below. Follow the links for more detailed descriptions of these data types, how they are implemented in GRASS GIS, and how to work with them.
+	<ul>
+		<li><a href="https://grass.osgeo.org/grass78/manuals/rasterintro.html" target="_blank">Raster</a> (including <a href="https://grass.osgeo.org/grass78/manuals/imageryintro.html" target="_blank">satellite imagery</a>)</li>
+		<li><a href="https://grass.osgeo.org/grass78/manuals/raster3dintro.html" target="_blank">3D raster or voxel</a></li>
+		<li><a href="https://grass.osgeo.org/grass78/manuals/vectorintro.html" target="_blank">Vector</a>: point, line, boundary, area, face</li>
+		<li><a href="https://grass.osgeo.org/grass78/manuals/temporalintro.html" target="_blank">Space-time datasets</a>: collections of raster (<b>STRDS</b>), raster 3D (<b>STR3DS</b>) or vector (<b>STVDS</b>) maps</li>
+	</ul>
+    <h3>Modules</h3>
+    GRASS functionality is available through <b>modules</b> (aka tools or functions). GRASS GIS is composed of more than <a href="https://grass.osgeo.org/grass78/manuals/full_index.html" target="_blank">500 modules</a> to perform any kind of GIS analysis. It is possible to analize raster, raster 3D, imagery and vector maps along with their alphanumerical attributes. Modules respect the following naming conventions:<br>
+	<p>
+    <table style="width:65%" border="1" align="center" bgcolor="#FFFFFF">
+	   <caption>GRASS GIS module families</caption>
+      <tr>
+          <th>Prefix</th>
+          <th>Function class</th>
+          <th>Type of command</th>
+          <th>Example</th>
+      </tr>
+      <tr>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/full_index.html#g" target="_blank">g.*</a></td>
+		  <td>general</td>
+		  <td>general data management</td>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/g.rename.html" target="_blank">g.rename</a>: renames map</td>
+      </tr>
+      <tr>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/full_index.html#d" target="_blank">d.*</a></td>
+		  <td>display</td>
+		  <td>graphical output</td>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/d.rast.html" target="_blank">d.rast</a>: display raster map, <a href="https://grass.osgeo.org/grass78/manuals/d.vect.html">d.vect</a>: display vector map</td>
+      </tr>
+      <tr>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/full_index.html#r" target="_blank">r.*</a></td>
+		  <td>raster</td>
+		  <td>raster processing</td>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/r.mapcalc.html" target="_blank">r.mapcalc</a>: map algebra, <a href="https://grass.osgeo.org/grass78/manuals/r.univar.html">r.univar</a>: univariate statistics</td>
+      </tr>
+      <tr>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/full_index.html#r" target="_blank">v.*</a></td>
+		  <td>vector</td>
+		  <td>vector processing</td>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/v.clean.html" target="_blank">v.clean</a>: topological cleaning</td>
+      </tr>
+      <tr>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/full_index.html#i" target="_blank">i.*</a></td>
+		  <td>imagery</td>
+		  <td>imagery processing</td>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/i.pca.html" target="_blank">i.pca</a>: Principal Components Analysis on imagery group</td>
+      </tr>
+      <tr>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/full_index.html#r3" target="_blank">r3.*</a></td>
+		  <td>voxel</td>
+		  <td>3D raster processing</td>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/r3.stats.html" target="_blank">r3.stats</a>: voxel statistics</td>
+      </tr>
+      <tr>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/full_index.html#db" target="_blank">db.*</a></td>
+		  <td>database</td>
+		  <td>database management</td>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/db.select.html" target="_blank">db.select</a>: select value(s) from table</td>
+      </tr>
+      <tr>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/full_index.html#ps" target="_blank">ps.*</a></td>
+		  <td>postscript</td>
+		  <td>map creation in PostScript format</td>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/ps.map.html" target="_blank">ps.map</a>: PostScript map creation</td>
+      </tr>
+      <tr>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/full_index.html#t" target="_blank">t.*</a></td>
+		  <td>temporal</td>
+		  <td>space-time datasets</td>
+		  <td><a href="https://grass.osgeo.org/grass78/manuals/t.rast.aggregate.html" target="_blank">t.rast.aggregate</a>: raster time series aggregation</td>
+      </tr>
+    </table>
+    <p>
+	These are the main groups of modules. Some modules have multiple dots in their names. This often suggests further grouping. For example, modules staring with t.rast.* deal with time series of raster data.<br><br>
+	The name of the module always relates to its function. For example, <a href="https://grass.osgeo.org/grass78/manuals/v.in.lidar.html" target="_blank">v.in.lidar</a> starts with <em>v</em> so it deals with vector maps; the second part of the name is <em>in</em> which indicates that the module is for importing data into GRASS GIS and finally, the name ends in <em>lidar</em> indicating that it deals with lidar point clouds.
+    <p>
+	The graphical user interface (GUI) offers a module tree view as well as a module search engine to find the function you need either by browsing through the tree or typing the name or part of the name of a module in the search box.
+    <div class="imagebox">
+        <img style="width: 30%;" src="images/module_tree.png" alt="Module tree tab" title="Module tree tab">
+        <img style="width: 30%;" src="images/module_tree_search.png" alt="Module search" title="Module search"><br>
+        Module tree and search engine
+    </div>
+    <p>
+    It is also possible to install further modules, called <b>Add-ons</b>, from a centralized <a href="https://grass.osgeo.org/grass78/manuals/addons/" target="_blank">GRASS GIS Add-on repository</a> at OSGeo or from github (or similar repositories) using the command <a href="https://grass.osgeo.org/grass78/manuals/g.extension.html" target="_blank">g.extension</a>. In the official GRASS GIS Add-on repository there are more than 300 modules that notably extend the capabilities of GRASS GIS.
+	<pre>
+		<code class="neutral">
+# install extension from GRASS GIS Add-on repository
+g.extension extension=r.hants
+
+# install extension from github repository
+g.extension url=https://github.com/pesekon2/GRASS-GIS-SOS-tools/tree/master/sos/r.in.sos
+		</code>
+	</pre>
+    <h3>Computational region</h3>
+    The <b>computational region</b> is a cornerstone concept in GRASS GIS: it is the <i>actual setting of the region boundaries and the actual raster resolution</i>. If you want to be able to use GRASS to its full potential, you have to understand it. In fact, it is so important that you should know about it even if you only plan some light usage of GRASS.
+    <br><br>
+    The raster input maps are automatically (on the fly) cropped/padded and rescaled to match the current region, the output maps have their bounds and resolution equal to those of the current computational region, while vector maps are always considered completely.
+    <br><br>
+    Before we use a module to compute a new raster map, we must set the computational region properly. All raster computations will be performed in the current region settings, i.e. the current region extent and current raster resolution. If the resolution differs from that of the input raster map(s), on-the-fly resampling is performed (nearest neighbor resampling). If this is not desired, the input map(s) has/have to be resampled beforehand with one of the dedicated modules.
+    <br><br>
+    The <b>computational region</b> can be set and changed by means of <a href="https://grass.osgeo.org/grass78/manuals/g.region.html" target="_blank">g.region</a> to the extent of a vector map (e.g. boundary of a state or county), a raster map or manually to some area of interest. Moreover you can save region settings and reload them when necessary. Besides, the region settings persist between GRASS sessions and are mapset specific.
+    <div class="imagebox">
+        <img style="width: 60%;" src="images/region.png" alt="Show computational region" title="Show computational region"><br>
+        Raster map extent vs. Computational region
+    </div>
+    <p>
+    <b>Which are the advantages?</b>
+    <ul>
+		<li>keep your results consistent</li>
+		<li>avoid clipping maps</li>
+		<li>test an algorithm or computationally demanding process in small areas first</li>
+		<li>fine-tune the settings of a certain module</li>
+		<li>run different processes in different areas</li>
+    </ul></p>
+    <p>
+    A word of caution for new users: Make always sure that the region is set correctly before doing any work on your map. A typical problem of newcomers to GRASS is that they import a map, do some computations, and end up with an empty output layer. This is almost always due to wrong region settings in which the imported map falls outside the area currently covered by the region. For a more detailed explanation of the region and how to work with it, see the Wiki page about the <a href="https://grasswiki.osgeo.org/wiki/Computational_region">Computational region
+    </a>.</p>
+    <h3>Mask</h3>
+    Like the <i>region</i>, the <i>Mask</i> is an important concept in GRASS that you need to understand to use GRASS to its full potential. If a mask is set, raster modules will operate only on data falling inside the masked area(s), i.e. any data falling outside of the mask are treated as if their pixel values were NULL. To set the mask you can use <a href="https://grass.osgeo.org/grass78/manuals/r.mask.html" target="_blank">r.mask</a> or create a raster called <code>MASK</code> (this raster map name is reserved for this purpose).
+    <br>
+    <div class="imagebox">
+        <img style="width: 30%;" src="images/show_lakes.png" alt="Elevation plus lakes" title="Elevation plus lakes">
+        <img style="width: 30%;" src="images/mask_surrounding_lakes.png" alt="Set lakes as mask" title="Set lakes as mask">
+        <img style="width: 30%;" src="images/mask_lakes.png" alt="Set inverse mask lakes" title="Set inverse mask lakes">
+        <br>
+        By setting the MASK (here based on lakes vector map) only the raster data inside the masked area (lakes) are used for further analysis (center). If we want to mask the lakes and analyze the rest, we create an "inverse" mask (right).
+    </div>
+    <p>
+	For new users, make always sure you know if/what MASK is set. You can easily check if there is a mask set by checking if there is a layer with the name MASK in your mapset. You can also display the MASK like any other raster layer. For more details about using masks, see the <a href="https://grass.osgeo.org/grass78/manuals/r.mask.html">r.mask manual page</a>.
+    </p>
+    <h3>Interfaces</h3>
+    GRASS GIS offers different interfaces for the interaction between user and software. Let's see them...
+    <h4>Graphical User Interface (GUI)</h4>
+    The GUI is the simplest way to approach GRASS GIS. It offers a user-friendly approach to executing modules where the users can navigate to data layers that they would like to analyze and modify processing options with simple check boxes. The GUI also offers an easily accessible manual on how to execute a module.
+    <br><br>
+    The <a href="https://grass.osgeo.org/grass78/manuals/wxGUI.html" target="_blank">GRASS GIS GUI</a> is composed of two elements, the <code>Layer Manager</code> where you can find all the GRASS GIS modules and manage your data and, the <code>Map Display</code> where you can navigate, print and query your maps. The GUI also comes with a Python shell for rapid prototyping.
+    <div class="imagebox">
+        <img style="width: 70%;" src="images/GUI_description.png" alt="GRASS GIS GUI" title="GRASS GIS GUI"><br>
+        GRASS GIS Graphical User Interface (GUI)
+    </div>
+    <h3>Command line</h3>
+    The command line is the traditional and, probably, the most powerful way to use GRASS GIS, used daily by many GRASS GIS power users worldwide.<br><br>
+    The command line interface allows users to execute a module using command prompts specific to that module. This is handy when you are running similar analyses with minor modification or are familiar with the module commands for quick efficient processing.
+    <div class="imagebox">
+        <img style="width: 30%;" src="images/grass_command_line.png" alt="GRASS GIS command line" title="GRASS GIS command line"><br>
+        GRASS GIS command line interface
+    </div>
+	<b>Advantages of the command line</b>
+	<ul>
+		<li>Run "history" to see all your previous commands</li>
+		<li>History is stored individually per MAPSET</li>
+		<li>Search in history with CTRL-R</li>
+		<li>Save the commands to a file: <code>history > my_protocol.sh</code>, polish/annotate the protocol and re-run with: <code>sh my_protocol.sh</code></li>
+		<li>Call module's GUI, set all options and "Copy" the final command for further replication</li>
+		<div class="imagebox">
+			<img style="width: 30%;" src="images/r_slope_aspect_terminal.png" alt="Call module GUI from terminal" title="Call module GUI from terminal">
+			<img style="width: 31%;" src="images/r_slope_aspect_gui.png" alt="Module GUI" title="Module GUI">
+			<br>
+			Calling a module GUI from the terminal
+		</div>
+	</ul>
+	Remember that there is a simplified command line included in the GUI, the tab "Console". It offers a "Command prompt" button to save the command's history to a file.
+	<div class="imagebox">
+		<img style="width: 25%;" src="images/command_prompt_gui.png" alt="Command line in the GUI" title="Command line in the GUI"><br>
+		Command line in the main GUI
+	</div>
+    <h4>Python</h4>
+    Python is a powerful and simple programming language, and you can use it to:
+    <ul>
+        <li>interface with the functionalities offered by GRASS GIS</li>
+        <li>create your own workflows chaining several GRASS GIS modules</li>
+        <li>create new add-ons by using GRASS GIS modules along with a wide number of Python libraries.</li>
+    </ul>
+    <p>
+    The simplest way to execute a Python script using GRASS GIS modules is to use the "Simple Python editor" accessible from the toolbar or the Python tab in the Layer Manager.
+	<div class="imagebox">
+		<img style="width: 50%;" src="images/simple_python_editor.png" alt="Python console and simple python editor" title="Python console and simple python editor"><br>
+		Python console and simple Python editor
+	</div>
+    Another option is to write the Python code in your favorite plain text editor. Then, run the script in GRASS GIS using the main menu File -> Launch script. Here's an example of Python code to run GRASS GIS modules:
+    <pre>
+		<code class="python">
+!/usr/bin/env python
+
+# simple example for pyGRASS usage: raster processing via modules approach
+
+from grass.pygrass.modules.shortcuts import general as g
+from grass.pygrass.modules.shortcuts import raster as r
+
+g.message("Filter elevation map by a threshold...")
+
+# set computational region
+input = 'elevation'
+g.region(rast=input)
+
+# hardcoded:
+# r.mapcalc('elev_100m = if(elevation > 100, elevation, null())', overwrite = True)
+
+# with variables
+output = 'elev_100m'
+thresh = 100.0
+r.mapcalc("%s = if(%s > %d, %s, null())" % (output, input, thresh, input), overwrite = True)
+r.colors(map=output, color="elevation")
+		</code>
+    </pre>
+    <h4>QGIS</h4>
+    There are two ways to use GRASS GIS and its functionalities in QGIS: through the <a href="https://docs.qgis.org/2.18/en/docs/user_manual/grass_integration/grass_integration.html" target="_blank">GRASS GIS plugin</a> and through <a href="https://docs.qgis.org/2.18/en/docs/user_manual/processing/toolbox.html">Processing</a> toolbox. In the first case, QGIS works as a GUI for GRASS GIS, and users can process and analyze their data in the GRASS Database with GRASS GIS modules. In the second case some of the GRASS GIS modules are available through Processing toolbox, and it allows to use GRASS functionality with data not necessarily in the GRASS Database.
+    <div class="imagebox">
+		<img style="width: 55%;" src="images/grass_processing.png" alt="GRASS modules through Processing Toolbox" title="GRASS modules through Processing Toolbox"><br>
+		GRASS modules through Processing Toolbox
+    </div>
+<!--
+    TODO: GRASS plugin does not show all functionality
+-->
+	<h4>R + rgrass7</h4>
+	GRASS GIS and R can be used together in two ways:
+	<ul>
+		<li>Using <b><a href="https://grasswiki.osgeo.org/wiki/R_statistics/rgrass7#R_within_GRASS" target="_blank">R within a GRASS GIS session</a></b>, i.e. you start R (or RStudio) from the GRASS GIS command line.</li>
+		<li>Using <b><a href="https://grasswiki.osgeo.org/wiki/R_statistics/rgrass7#GRASS_within_R" target="_blank">GRASS GIS within an R session</a></b>, i.e. you connect to GRASS GIS Database from within R (or RStudio).</li>
+	</ul>
+	A special R package, <b>rgrass7</b>, provides the necessary interface to read and write data from and into GRASS Database, as well as to execute GRASS GIS commands from within R. More details and examples on both ways of combining GRASS and R can be found in the <a href="https://grasswiki.osgeo.org/wiki/R_statistics/rgrass7" target="_blank">GRASS and R</a> dedicated wiki page.
+	<div class="imagebox">
+		<img style="width: 25%;" src="images/R_within_grass.png" alt="Calling R from within GRASS" title="Calling R from within GRASS">
+		<img style="width: 59%;" src="images/Rstudio_from_grass.png" alt="Calling Rstudio from within GRASS" title="Calling Rstudio from within GRASS"><br>
+		Calling R (left) and Rstudio (right) from within GRASS
+	</div>
+    <h4>WPS - OGC Web Processing Service</h4>
+    It is possible to run GRASS GIS modules through the web using the <a href="https://en.wikipedia.org/wiki/Web_Processing_Service" target="_blank">Web Processing Service</a> (WPS is an <a href="https://en.wikipedia.org/wiki/Open_Geospatial_Consortium" target="_blank">OGC</a> standard). The Free and Open Source software <a href="http://zoo-project.org/" target="_blank">ZOO-Project</a> and <a href="http://pywps.org/" target="_blank">PyWPS</a> allow the user to run GRASS GIS commands in a simple way.
+
+    <p><i>Last changed: 2021-07-07</i></p>
+    <p>
+    <a href="http://grass.osgeo.org/grass78/manuals/">GRASS GIS manual main index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/topics.html">Topics index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/keywords.html">Keywords Index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/full_index.html">Full index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/raster.html">Raster index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/vector.html">Vector index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/temporal.html">Temporal index</a> |
+    </p>
+    <p>
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" src="images/ccbysa.png"></a>
+        <br>
+        Licensed under a <b><a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative Commons Attribution-ShareAlike 4.0 International License</a></b> - Thanks to <a href="http://www4.ncsu.edu/~vpetras/index.html" target="_blank"><b>Vaclav Petras</b></a> for the style.
+        </p>
+      </div>
+    
+    </body>
+    </html>

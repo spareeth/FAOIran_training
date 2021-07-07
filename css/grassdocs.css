@@ -16,6 +16,19 @@ body{
     font-family: arial,sans-serif;
 }
 
+note{
+    background: rgb(151, 60, 60);
+    color: rgb(248, 239, 239);
+    font-family: arial,sans-serif;
+}
+
+hlt{
+    background: rgb(16, 32, 179);
+    color: rgb(248, 239, 239);
+    font-family: arial,sans-serif;
+    font-style: italic;
+}
+
 #container
 {
     position: relative;

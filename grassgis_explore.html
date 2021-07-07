@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Explore features in GRASS GIS</title>
+  <meta name="description" content="GRASS GIS course">
+  <meta name="author" content="Sajid Pareeth">
+  <link rel="shortcut icon" href="grass.png">
+
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/codetabs.js"></script>
+
+<!--
+<link rel="stylesheet" href="http://yandex.st/highlightjs/8.0/styles/default.min.css">
+<script src="http://yandex.st/highlightjs/8.0/highlight.min.js"></script>
+-->
+
+  <script type="text/javascript" src="lib/highlights/highlight.pack.js"></script>
+  <link rel="stylesheet" href="lib/highlights/styles/default.css">
+  <link rel="stylesheet" href="css/grassdocs.css">
+  <link rel="stylesheet" href="css/codetabs.css">
+
+<style type="text/css">
+.hljs{
+    display: none;
+    /*padding: 0em;*/
+}
+</style>
+
+</head>
+
+<body>
+
+  <div id="container">
+    <a href="https://grass.osgeo.org" title="GRASS GIS"><img src="images/grassgis_logo_colorlogo_text_whitebg.png" width="9.5%" height="9.5%" align="right" alt="GRASS GIS logo"></a>
+    <a href="https://un-ihe.org/" title="IHE Delft"><img src="images/IHE_logo.png" height="100%" align="left" alt="IHE Delft logo"></a>
+    <h1 class="notoc" align="center">Spatio-temporal analysis with GRASS GIS</h1>
+    <h3 class="notoc" align="center">IHE Delft Institute for Water Education</h3>
+<!--
+    <h3 class="notoc" align="center">November 3rd, 2017</h3>
+-->
+    <h3 class="notoc" align="center">The Netherlands</h3>
+    <p class="notoc" align="center">
+    <a href="https://www.un-ihe.org/sajid-pareeth" target="_blank">Dr. Sajid Pareeth</a>
+    </p>
+    <h2>Outline</h2>
+    <ul>
+		<li><a href="index.html">Installation steps</a></li>
+        <li><a href="grassgis_intro.html">Introduction to GRASS GIS</a></li>
+        <li><a href="grassgis_start.html">Start with GRASS GIS - first steps</a></li>
+        <li><a href="grassgis_explore.html">Explore features in GRASS GIS</a></li>
+        <li><a href="exercise1.html">Exercise 1 - Seasonal aggregation and statistical analysis</a></li>
+        <li><a href="exercise2.html">Exercise 2 - Spatio-temporal analysis of climatic data</a></li>
+    </ul>
+    <p style="border-top-style: solid; border-width: 5px; border-color: rgb(130, 130, 130); padding-top: 5px; padding_bottom: 5px;" align="center"></p>
+    <h2><a name="explore">Explore features in GRASS GIS</a></h2>
+    <h3>Import data</h3>
+    To explore the basic features of Grass GIS, let us import a raster and 3 different vector files into the location/mapset you created in the previous section.
+	<ul>
+		<li><a href="https://grass.osgeo.org/grass78/manuals/r.import.html" target="_blank">r.import</a> and <a  href="https://grass.osgeo.org/grass78/manuals/v.import.html" target="_blank">v.import</a>: import of raster and vector maps with reprojection, subsetting and resampling on the fly.
+		<pre><code class="neutral">
+## Open the Grass GIS in 'utm38n/ulb_wapor' location/mapset
+grass78 /mnt/d/grassdata/utm38n/ulb_wapor
+## IMPORT VECTOR DATA: Boundaries of Urmia Lake basin, Miandoab Irrig scheme and Urmia Lake
+## Navigate (cd) to the 'Base_layers' folder provided to you
+cd /path/to/Base_layers # change the path to actual path in your computer
+# Import 'Urmia Lake Basin' boundary shapefile into a vector in Grass GIS
+v.import in=UrmiaLB.shp out=ulb
+# Import 'Miandoab Irrigation Scheme' boundary shapefile into a vector in Grass GIS
+v.import in=Miandoab.shp out=mis
+# Import 'Urmia Lake' boundary shapefile into a vector in Grass GIS
+v.import in=LakeUrmia.shp out=lake
+# set the computational region to Urmia Lake basin and set the computational resolution to 250 m
+g.region vector=ulb res=250 -a
+## IMPORT RASTER DATA: SRTM V3 data for ULB
+## cd to the directory containing elevation raster file
+cd /path/to/Base_layers # change the path to actual path in your computer
+# Import with reprojection on the fly
+r.import input=elevation.tif output=elevation resample=bilinear extent=region resolution=region
+		</code></pre>
+
+In the above code snippet we introduce three modules in Grass GIS - <a href="https://grass.osgeo.org/grass78/manuals/r.import.html" target="_blank">r.import</a>, <a  href="https://grass.osgeo.org/grass78/manuals/v.import.html" target="_blank">v.import</a> and <a href="https://grass.osgeo.org/grass78/manuals/g.region.html" target="_blank">g.region</a>. <br>
+<br>
+<br>
+<a href="https://grass.osgeo.org/grass78/manuals/g.region.html" target="_blank">g.region</a> restricts the spatial and temporal processing to the defined computational region. In the above code we set the computational region to urmia lake basin (<hlt>g.region vect=ulb res=250 -a</hlt>) with a resolution of 250m. That means, all the remaining processing and analysis will be carried out within this region and output rasters will have a resolution of 250 m. <br>
+<br>
+<br>
+<note>To see the details of the computational region: use the command <hlt>g.region -p</hlt></note> <br>
+<br>
+<note>All the modules in Grass GIS can be accessed via command line and via GUI</note><br>
+<br>
+To open a module in gui, type in the module name in command line and press enter. OR you can access the module through the layer manager window like any other GIS software.
+<div class="imagebox">
+    <a href="images/gui1.gif" ><img style="width: 50%;" src="images/gui1.gif" alt="open module in gui" title="open module in gui"></a><br>
+    open module in gui
+</div>   
+
+As the main advantage of Grass GIS is the powerful command line options, we stick to command line operations in this course. <br>
+<br>
+
+<h3>Manage vector and raster data</h3>
+		</li>
+		<li><a href="https://grass.osgeo.org/grass78/manuals/g.list.html" target="_blank">g.list</a>: Lists available GRASS data base files of the user-specified data type (i.e., raster, vector, 3D raster, region, label) optionally using the search pattern.
+		<pre><code class="neutral">
+g.list type=raster pattern="elev*"|cat
+g.list type=vector|cat
+		</code></pre>
+		</li>
+		<li><a href="https://grass.osgeo.org/grass78/manuals/g.remove.html" target="_blank">g.remove</a>, <a href="https://grass.osgeo.org/grass78/manuals/g.remove.html" target="_blank">g.rename</a> and <a href="https://grass.osgeo.org/grass78/manuals/g.copy.html" target="_blank">g.copy</a>: These modules remove maps from the GRASSDBASE, rename maps and copy maps either in the same mapset or from other mapset. IMPORTANT: Always perform these tasks from within GRASS. Note that g.remove offers the same extra-useful <em>pattern</em> option than g.list.</li>
+        
+<h3>Computational region</h3>
+		<li><a href="https://grass.osgeo.org/grass78/manuals/g.region.html" target="_blank">g.region</a>: Manages the boundary definitions and resolution for the computational region. It is especially relevant when generating new raster maps.
+		<pre><code class="neutral">
+## Subset a raster map
+
+# 1. Check region settings
+g.region -p
+
+# 2. Change region to Miandoab
+g.region vect=mis res=250 -a
+# print the region
+# 3. Subset map
+r.mapcalc "elevation_mis = elevation"
+r.colors elevation_mis color=elevation
+</code></pre>
+		</li>
+
+<div class="imagebox">
+    <a href="images/region1.gif" ><img style="width: 50%;" src="images/region1.gif" alt="changing computational region" title="changing computational region"></a><br>
+    changing computational region
+</div>  
+<h3>Raster and vector information</h3>
+		<li><a href="https://grass.osgeo.org/grass78/manuals/r.info.html" target="_blank">r.info</a> and <a href="https://grass.osgeo.org/grass78/manuals/v.info.html" target="_blank">v.info</a>: These modules are very useful to get basic info about maps as well as their history.
+		<pre><code class="neutral">
+# info for raster map
+r.info elevation
+
+# info for vector map
+v.info ulb
+
+# history of vector map
+v.info ulb -h
+		</code></pre>
+
+    </li>
+
+    <h3>Mask and clipping</h3>
+    <li><a href="https://grass.osgeo.org/grass78/manuals/r.mask.html" target="_blank">r.mask</a>: This module is very useful to mask to a particular vector or even raster values, for example a particular land cover type. This can be also used to clip an existing raster to another boundary.
+    <pre><code class="neutral">
+# set the region first
+g.region vect=ulb res=250 -a
+# Create a mask of urmia lake basin
+r.mask vect=ulb
+# Clip the elevation to Urmia lake basin boundary
+r.mapcalc "elevation_ulb = elevation"
+# Remove the Mask
+r.mask -r
+    </code></pre>
+    </li>
+    <div class="imagebox">
+        <a href="images/mask1.gif" ><img style="width: 50%;" src="images/mask1.gif" alt="applying mask" title="applying mask"></a><br>
+        Applying mask
+    </div>  
+    <h3>Univariate statistics of a raster</h3>
+    <li><a href="https://grass.osgeo.org/grass78/manuals/r.univar.html" target="_blank">r.univar</a>: This module is very useful to get univariate statistics of a particular raster map.
+    <pre><code class="neutral">
+# Univariate statistics of elevation in ulb
+r.univar elevation
+
+# extended univar statistics of elevation in ulb
+r.univar -e elevation
+
+# Compute 5 and 95 percentile fromthe distribution of elevation in ULB
+r.univar -e elevation percentile=5,95
+    </code></pre>
+
+    </li>
+ 		</li>
+         <h3>Creating bash scripts</h3>
+		<li>Now you want to create a script to run certain spatial analysis in a mapset. In bash, the scripts are with the extensions ".sh". Follow below code and create your first script in bash
+		<pre><code class="neutral">
+#!/bin/bash
+# copy this entire code (including the comments) and paste into an empty text file
+# Save this file as "myscript.sh"
+# This script print the computational region, list the raster files and Compute
+# univariate statistics of elevation
+g.region -p
+g.list type=raster|cat
+r.univar elevation
+		</code></pre>
+
+Now you have "myscript.sh" ready. In the command console, type <hlt>sh myscript.sh</hlt> to run the script.
+
+<h3>Managing multiple mapsets within a location</h3>
+<li><a href="https://grass.osgeo.org/grass78/manuals/g.mapset.html" target="_blank">g.mapset</a> and <a href="https://grass.osgeo.org/grass78/manuals/g.mapsets.html" target="_blank">g.mapsets</a>: These modules allow to change mapset and add/remove mapsets from the accessible mapsets list (i.e., we add a mapset to the path if we want to read/see maps in that mapset while we are working in another).
+    <pre><code class="neutral">
+# print current mapset
+g.mapset -p
+
+# change to a different mapset
+g.mapset mapset=PERMANENT
+
+# print mapsets in the search path
+g.mapsets -p
+
+# list available mapsets in the location
+g.mapsets -l
+
+# add mapset to the search path
+g.mapsets mapset=PERMANENT operation=add
+    </code></pre>
+    <p><i>Last changed: 2021-07-07</i></p>
+    <p>
+    <a href="http://grass.osgeo.org/grass78/manuals/">GRASS GIS manual main index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/topics.html">Topics index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/keywords.html">Keywords Index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/full_index.html">Full index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/raster.html">Raster index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/vector.html">Vector index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/temporal.html">Temporal index</a> |
+    </p>
+    <p>
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" src="images/ccbysa.png"></a>
+        <br>
+        Licensed under a <b><a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative Commons Attribution-ShareAlike 4.0 International License</a></b> - Thanks to <a href="http://www4.ncsu.edu/~vpetras/index.html" target="_blank"><b>Vaclav Petras</b></a> for the style.
+        </p>
+      </div>
+    
+    </body>
+    </html>

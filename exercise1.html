@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Explore features in GRASS GIS</title>
+  <meta name="description" content="GRASS GIS course">
+  <meta name="author" content="Sajid Pareeth">
+  <link rel="shortcut icon" href="grass.png">
+
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/codetabs.js"></script>
+
+<!--
+<link rel="stylesheet" href="http://yandex.st/highlightjs/8.0/styles/default.min.css">
+<script src="http://yandex.st/highlightjs/8.0/highlight.min.js"></script>
+-->
+
+  <script type="text/javascript" src="lib/highlights/highlight.pack.js"></script>
+  <link rel="stylesheet" href="lib/highlights/styles/default.css">
+  <link rel="stylesheet" href="css/grassdocs.css">
+  <link rel="stylesheet" href="css/codetabs.css">
+
+<style type="text/css">
+.hljs{
+    display: none;
+    /*padding: 0em;*/
+}
+</style>
+
+</head>
+
+<body>
+
+  <div id="container">
+    <a href="https://grass.osgeo.org" title="GRASS GIS"><img src="images/grassgis_logo_colorlogo_text_whitebg.png" width="9.5%" height="9.5%" align="right" alt="GRASS GIS logo"></a>
+    <a href="https://un-ihe.org/" title="IHE Delft"><img src="images/IHE_logo.png" height="100%" align="left" alt="IHE Delft logo"></a>
+    <h1 class="notoc" align="center">Spatio-temporal analysis with GRASS GIS</h1>
+    <h3 class="notoc" align="center">IHE Delft Institute for Water Education</h3>
+<!--
+    <h3 class="notoc" align="center">November 3rd, 2017</h3>
+-->
+    <h3 class="notoc" align="center">The Netherlands</h3>
+    <p class="notoc" align="center">
+    <a href="https://www.un-ihe.org/sajid-pareeth" target="_blank">Dr. Sajid Pareeth</a>
+    </p>
+    <h2>Outline</h2>
+    <ul>
+		<li><a href="index.html">Installation steps</a></li>
+        <li><a href="grassgis_intro.html">Introduction to GRASS GIS</a></li>
+        <li><a href="grassgis_start.html">Start with GRASS GIS - first steps</a></li>
+        <li><a href="grassgis_explore.html">Explore features in GRASS GIS</a></li>
+        <li><a href="exercise1.html">Exercise 1 - Seasonal aggregation and statistical analysis</a></li>
+        <li><a href="exercise2.html">Exercise 2 - Spatio-temporal analysis of climatic data</a></li>
+    </ul>
+    <p style="border-top-style: solid; border-width: 5px; border-color: rgb(130, 130, 130); padding-top: 5px; padding_bottom: 5px;" align="center"></p>
+    <h2><a name="exercise1">Exercise 1 - Seasonal aggregation and statistical analysis</a></h2>
+    <h3>Objectives</h3>
+    <b>Aim:</b> <br>
+    <br>
+    The main objective of this exercise is to explore monthly Actual EvapoTranspiration (AETI) and Precipitation (PCP) data from <a  href="https://wapor.apps.fao.org/" target="_blank">FAO WaPOR</a> over Urmia lake basin, and extract Land cover based statistics for the crop year 2018/2019.<br>
+    <br>
+    <b>Data provided:</b> <br>
+    <br>
+    All data provided cover the entire Urmia Lake Basin
+    <ul>
+		<li>Monthly AETI (October 2017 to September 2020) at 250 m resolution</li>
+        <li>Monthly PCP (October 2017 to September 2020) at 2500 m resolution</li>
+        <li>Annual Land cover map (2018,2019,2020) at 250 m resolution</li>
+        <li>SRTM elevation - resampled to 250 m</li>
+        <li>Base layers - Boundaries of Urmia lake, Urmia lake basin, Miandoab irrigation scheme</li>
+    </ul>
+	For this exercise, we will use some GeoTIFF files obtained from FAO WaPOR and the shape files 
+    <li>Download the data <a href="http://www.eo4ag.com/misc/Data_ulb_share.tar.gz" target="_blank">here</a></li>
+
+    <div class="imagebox">
+        <a href="images/data_ulb.png" ><img style="width: 10%;" src="images/data_ulb.png" alt="Data provided" title="Data provided"></a><br>
+        Data provided
+    </div>   
+    <h3>Step 1: Import data</h3>
+    For this exercise we will use the location/mapset created in previous section: utm38n/ulb_wapor
+
+		<pre><code class="neutral">
+## Open the Grass GIS in 'utm38n/ulb_wapor' location/mapset
+grass78 /mnt/d/grassdata/utm38n/ulb_wapor
+## Set the region to ULB
+g.region vect=ulb res=250 -a
+## remove any Mask
+r.mask -r
+## We have imported all the vector files (Base_layers) in the previous section.
+## Now let us import all the WaPOR data into the grass gis mapset.
+## Navigate (cd) to the '' folder provided to you
+cd /path/to/Data_ULB/Wapor # change the path to actual path in your computer
+## Let us import all the AETI maps first
+cd AETI
+## List all the maps in the folder
+ls
+## let us use a 'for' loop to import all the maps in to GRASS GIS mapset in one go.
+for i in `ls *.tif`; do
+    out=`echo ${i}|cut -d. -f1`
+    r.import in=${i} out=${out} extent=region resolution=region
+done
+## press enter
+## Now Let us import all the precipitation maps
+cd /path/to/Data_ULB/Wapor/PCP
+## let us use a 'for' loop to import all the maps in to GRASS GIS mapset in one go.
+for i in `ls *.tif`; do
+    out=`echo ${i}|cut -d. -f1`
+    r.import in=${i} out=${out} extent=region resolution=value resolution_value=2500
+done
+## press enter
+## Now Let us import all the Land cover maps
+cd /path/to/Data_ULB/Wapor/LCC
+## let us use a 'for' loop to import all the maps in to GRASS GIS mapset in one go.
+for i in `ls *.tif`; do
+    out=`echo ${i}|cut -d. -f1`
+    r.import in=${i} out=${out} extent=region resolution=region
+done
+## press enter
+	</code></pre>
+
+Now you want to just list the AETI data for the year 2019. USE g.list as shown below:
+<pre><code class="neutral">
+## below command list the raster maps AETI of year 2019
+g.list rast mapset=. pattern=L1_AETI_2019*|cat
+## Change the pattern above to select sub samples of maps
+        </code></pre>
+
+        <h3>Step 2: Apply scale factor</h3>
+        Both AETI and PCP needs to be scaled by a factor of 0.1 as per the WaPOR documentation before using for analysis. Below code apply the scale to all the maps in one go using a for loop. This time we want to restrict the data within Urmia lake basin boundary. So we apply a mask, before applying scale factor.
+            <pre><code class="neutral">
+    ## Set the region to ULB
+    g.region vect=ulb res=250 -a
+    ## Apply a mask to restrict further analysis to ULB
+    r.mask vect=ulb --o
+    ## List all the AETI maps in Grass mapset
+    g.list rast mapset=. pattern=L1_AETI*|cat
+    ## let us use a 'for' loop to apply scale factor to all the AETI maps in the mapset in one go.
+    for i in `g.list rast mapset=. pattern=L1_AETI*|cat`; do
+        r.mapcalc "${i}_scaled = ${i} * 0.1"
+    done
+    ## press enter
+    ## List all the PCP maps in Grass mapset
+    g.list rast mapset=. pattern=L1_PCP*|cat
+    ## let us use a 'for' loop to apply scale factor to all the AETI maps in the mapset in one go.
+    for i in `g.list rast mapset=. pattern=L1_PCP*|cat`; do
+        r.mapcalc "${i}_scaled = ${i} * 0.1"
+    done
+    ## press enter
+        </code></pre>
+
+    <h3>Step 3: Aggregate to seasonal maps</h3>
+    Let us now aggregate the AETI and PCP maps to compute annual maps covering a crop year. Let us consider the crop year from October to September (next year).
+    Below code compute the total AETI and PCP for the year 2017/18.
+    <pre><code class="neutral">
+## Set the region to ULB
+g.region vect=ulb res=250 -a
+## Apply a mask to restrict further analysis to ULB
+r.mask vect=ulb --o
+## List all the AETI maps in Grass mapset
+g.list rast mapset=. pattern=L1_AETI*scaled|cat
+## select the maps you want to aggregate and save it into a text file using notepad.(see below screenshot)
+## Assuming the file with map names is maps_aeti.txt
+## below code aggregate the maps using the function "sum"
+r.series file=maps_aeti.txt out=AETI_annual_2017_18 method=sum
+## List all the PCP scaled maps in Grass mapset
+g.list rast mapset=. pattern=L1_PCP*scaled|cat
+## select the maps you want to aggregate and save it into a text file using notepad.(see below screenshot)
+## Assuming the file with map names is maps_pcp.txt
+## below code aggregate the maps using the function "sum"
+r.series file=maps_pcp.txt out=PCP_annual_2017_18 method=sum
+## press enter
+</code></pre>
+
+<div class="imagebox">
+    <a href="images/maps_txt.png" ><img style="width: 10%;" src="images/maps_txt.png" alt="Input text file with input map names" title="Input text file with input map names"></a><br>
+    Input text file with input map names
+</div>   
+
+<h3>Step 4: Univariate statistics</h3>
+Let us now find the univariate statistics of the Annual AETI and PCP maps
+<pre><code class="neutral">
+# Compute univariate statistics of the annual maps
+r.univar -e AETI_annual_2017_18
+r.univar -e PCP_annual_2017_18
+## press enter
+</code></pre>
+
+<div class="imagebox">
+    <a href="images/stats_annual.png" ><img style="width: 20%;" src="images/stats_annual.png" alt="Univariate statistics results" title="Univariate statistics results"></a><br>
+    Univariate statistics results of annual AETI 2017/18
+</div>   
+
+h3>Step 5: Find the land cover area</h3>
+Let us now find the surface area of each land cover type in ULB as per WaPOR LCC map of 2018.
+<pre><code class="neutral">
+## Set the region to ULB
+g.region vect=ulb res=250 -a
+## Apply a mask to restrict further analysis to ULB
+r.mask vect=ulb --o
+# First list all the LCC maps
+g.list rast mapset=. pattern=L1_LCC*|cat
+# First let us assign category names to each land cover id as per WaPOR Catalog
+r.category map=wapor_LCC_mean_reclass rules=rules_reclass.txt sep=comma
+# A text file with category details are developed and provided to you as 'rules_lcc.txt' inside 'Base_layers' folder.
+r.category map=L1_LCC_2018 rules=rules_lcc.txt sep=comma
+# Below command compute the surface area of each Land cover type in hectares.
+r.report L1_LCC_2018 units=k -e -n -h
+</code></pre>
+
+h3>Step 6: Find the AETI and PCP stats per Land cover type</h3>
+Let us now find the Mean and median annual AETI and PCP per land cover type.
+<pre><code class="neutral">
+## Set the region to ULB
+g.region vect=ulb res=250 -a
+## Apply a mask to restrict further analysis to ULB
+r.mask vect=ulb --o
+# Use the below univar command with zones and -t flag to compute stats per land cover type
+# For Annual AETI
+r.univar -t AETI_annual_2017_18 zones=L1_LCC_2018 sep=, output=AETI_stats_2017_18.csv
+# For Annual PCP
+r.univar -t PCP_annual_2017_18 zones=L1_LCC_2018 sep=, output=PCP_stats_2017_18.csv
+</code></pre>
+
+h3>Your tasks</h3>
+Follow the above steps (3-6) to compute Annual AETI and PCP maps for the years 2018/19 and 2019/20. <br>
+<ul>
+    <li>Compute univariate statistics of Annual AETI and PCP of crop years 2018/19> and 2019/20</li>
+    <li>Compute Landcover based statistics of Annual AETI and PCP of crop years 2018/19> and 2019/20</li>
+    <li>Prepare maps of Annual AETI and PCP with a nice layout (in QGIS?)</a></li>
+    <li>Submit a short report (max 3 pages) with the results in OCW platform</a></li>
+</ul>
+
+
+    <p><i>Last changed: 2021-07-07</i></p>
+    <p>
+    <a href="http://grass.osgeo.org/grass78/manuals/">GRASS GIS manual main index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/topics.html">Topics index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/keywords.html">Keywords Index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/full_index.html">Full index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/raster.html">Raster index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/vector.html">Vector index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/temporal.html">Temporal index</a> |
+    </p>
+    <p>
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" src="images/ccbysa.png"></a>
+        <br>
+        Licensed under a <b><a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative Commons Attribution-ShareAlike 4.0 International License</a></b> - Thanks to <a href="http://www4.ncsu.edu/~vpetras/index.html" target="_blank"><b>Vaclav Petras</b></a> for the style.
+        </p>
+      </div>
+    
+    </body>
+    </html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>First steps in GRASS GIS</title>
+  <meta name="description" content="GRASS GIS course">
+  <meta name="author" content="Sajid Pareeth">
+  <link rel="shortcut icon" href="grass.png">
+
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/codetabs.js"></script>
+
+<!--
+<link rel="stylesheet" href="http://yandex.st/highlightjs/8.0/styles/default.min.css">
+<script src="http://yandex.st/highlightjs/8.0/highlight.min.js"></script>
+-->
+
+  <script type="text/javascript" src="lib/highlights/highlight.pack.js"></script>
+  <link rel="stylesheet" href="lib/highlights/styles/default.css">
+  <link rel="stylesheet" href="css/grassdocs.css">
+  <link rel="stylesheet" href="css/codetabs.css">
+
+<style type="text/css">
+.hljs{
+    display: none;
+    /*padding: 0em;*/
+}
+</style>
+
+</head>
+
+<body>
+
+  <div id="container">
+    <a href="https://grass.osgeo.org" title="GRASS GIS"><img src="images/grassgis_logo_colorlogo_text_whitebg.png" width="9.5%" height="9.5%" align="right" alt="GRASS GIS logo"></a>
+    <a href="https://un-ihe.org/" title="IHE Delft"><img src="images/IHE_logo.png" height="100%" align="left" alt="IHE Delft logo"></a>
+    <h1 class="notoc" align="center">Spatio-temporal analysis with GRASS GIS</h1>
+    <h3 class="notoc" align="center">IHE Delft Institute for Water Education</h3>
+<!--
+    <h3 class="notoc" align="center">November 3rd, 2017</h3>
+-->
+    <h3 class="notoc" align="center">The Netherlands</h3>
+    <p class="notoc" align="center">
+    <a href="https://www.un-ihe.org/sajid-pareeth" target="_blank">Dr. Sajid Pareeth</a>
+    </p>
+    <h2>Outline</h2>
+    <ul>
+        <li><a href="index.html">Installation steps</a></li>
+        <li><a href="grassgis_intro.html">Introduction to GRASS GIS</a></li>
+        <li><a href="grassgis_start.html">Start with GRASS GIS - first steps</a></li>
+        <li><a href="grassgis_explore.html">Explore features in GRASS GIS</a></li>
+        <li><a href="exercise1.html">Exercise 1 - Seasonal aggregation and statistical analysis</a></li>
+        <li><a href="exercise2.html">Exercise 2 - Spatio-temporal analysis of climatic data</a></li>
+    </ul>
+    <p style="border-top-style: solid; border-width: 5px; border-color: rgb(130, 130, 130); padding-top: 5px; padding_bottom: 5px;" align="center"></p>
+    <h2><a name="explore">Start with GRASS GIS - first steps</a></h2>
+    <h3>Create a GRASS database</h3>
+	
+	<p>GRASS database is a folder where you exclusively store all your data in native grass format. Normally we make a folder called "grassdata" inside C: or D: or any other drive where there is space. <br>
+    </p>
+    <p>
+	In my computer it is in <hlt>D:/grassdata</hlt>. So create a new folder called "grassdata" in your favourite drive, where there is enough space to store and process data.
+    <br>
+    <br>
+    <note>Remember you can have multiple "grassdata" folders inside different drives. Further logical explanation on the GRASSDB and its architecture is explained in the previous section on </note><a href="grassgis_intro.html" target="_blank">grass gis introduction.</a></p><br>
+
+    <b>Launch GRASS GIS</b>
+	<p>In the MobaXterm Ubuntu session type in <hlt>grass78</hlt> and press enter. Either you can open GRASS in command line only or both in command line and GUI.</p>
+	
+    <p style="border-top-style: solid; border-width: 5px; border-color: rgb(130, 130, 130); padding-top: 5px;"></p>
+
+
+    <h3>Create locations and mapsets</h3>
+	Assuming you have already created your GRASS GIS database here: <hlt>D:/grassdata</hlt>, let us create a location in UTM38N (epsg:32638). The easiest way to assign Coordinate Reference System (CRS) to a study area is to find the corresponding EPSG code of that CRS. To get the right EPSG code refer to this <a href="http://spatialreference.org/" target="_blank">link</a>.
+	<br>
+    <br>
+	Now, open MobaXterm Ubuntu session and follow the commands in below snippet to create location and mapset using command line.
+	<br> 
+	<br> 
+	<b>Using Command line</b>
+<pre><code class="bash">
+# To get the help of command
+grass78 --h
+# Create (-c) just the location called "utm38n" in epsg:32638 and exit (-e)
+# Remember name of the location can be anything, give a logical name
+grass78 epsg:32638 /mnt/d/grassdata/utm38n -c -e
+# Create (-c) mapset called "ulb_wapor" inside the location "utm38n" and open GRASS GIS in "utm38n/ulb_wapor" mapset
+grass78 /mnt/d/grassdata/utm38n/ulb_wapor -c
+# "-c" flag in above command is required only one time to create the mapset ulb_wapor
+# Afterwards use below command to just start the existing mapset.
+grass78 /mnt/d/grassdata/utm38n/ulb_wapor
+		</code></pre>
+        <br> 
+		
+    <note>Tips: use 'Tab' key to autocomplete the path names and command names.</note>
+    <br>
+    <br> 
+    <note>Tips: Use 'Ctrl-L' to clear the text in MobaXterm command line window</note>
+    <br>
+    <div class="imagebox">
+        <a href="images/createloc1.gif" ><img style="width: 50%;" src="images/createloc1.gif" alt="Create location and mapset in command line" title="Create location and mapset in command line"></a><br>
+        Create location and mapset in command line
+    </div>   
+
+		<b>Using GUI</b>
+        To open Grass GIS in both GUI and command line, type <hlt>grass 78 --gui</hlt> in MobaXterm Ubuntu session and press enter. See below short video to create a new location and mapset in GUI.
+        <div class="imagebox">
+            <a href="images/createloc2.gif" ><img style="width: 50%;" src="images/createloc2.gif" alt="Create location and mapset in GUI" title="Create location and mapset in GUI"></a><br>
+            Create location and mapset in GUI
+        </div>
+
+    <h3>Exiting GRASS GIS</h3>
+    <p>There are multiple ways to exit from GRASS GIS. Either you close the GUI or use <hlt>Ctrl-D</hlt>. </p>
+	<br>
+
+	<b>Using Command line</b><br>
+    In the MobaXtern Ubuntu session, inside the grass session use <hlt>Ctrl-D</hlt> to exit from the session.
+    <br>
+    <br>
+	<b>Using GUI</b>
+    <div class="imagebox">
+		<a href="images/closegrass.png" ><img style="width: 30%;" src="images/closegrass.png" alt="Close GRASS GIS from GUI" title="Close GRASS GIS from GUI"></a><br>
+        Close GRASS GIS from GUI
+	</div>
+
+    While closing the Grass GIS from GUI, 'Close GUI' only close the GUI while retain the active Grass session in the command line. The option 'Quit GRASS GIS' will close both GUI and command line sessions.
+    <br>
+    <br>
+    <note>Tip: If you close the GUI keeping the active command line session, you can always reopen the gui using the command <hlt>g.gui</hlt> in command line</note>
+
+
+    <p><i>Last changed: 2021-07-07</i></p>
+    <p>
+    <a href="http://grass.osgeo.org/grass78/manuals/">GRASS GIS manual main index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/topics.html">Topics index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/keywords.html">Keywords Index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/full_index.html">Full index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/raster.html">Raster index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/vector.html">Vector index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/temporal.html">Temporal index</a> |
+    </p>
+    <p>
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" src="images/ccbysa.png"></a>
+        <br>
+        Licensed under a <b><a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative Commons Attribution-ShareAlike 4.0 International License</a></b> - Thanks to <a href="http://www4.ncsu.edu/~vpetras/index.html" target="_blank"><b>Vaclav Petras</b></a> for the style.
+        </p>
+      </div>
+    
+    </body>
+    </html>
