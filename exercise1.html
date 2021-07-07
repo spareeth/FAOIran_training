@@ -191,7 +191,7 @@ r.univar -e PCP_annual_2017_18
     Univariate statistics results of annual AETI 2017/18
 </div>   
 
-h3>Step 5: Find the land cover area</h3>
+<h3>Step 5: Find the land cover area</h3>
 Let us now find the surface area of each land cover type in ULB as per WaPOR LCC map of 2018.
 <pre><code class="neutral">
 ## Set the region to ULB
@@ -208,7 +208,7 @@ r.category map=L1_LCC_2018 rules=rules_lcc.txt sep=comma
 r.report L1_LCC_2018 units=k -e -n -h
 </code></pre>
 
-h3>Step 6: Find the AETI and PCP stats per Land cover type</h3>
+<h3>Step 6: Find the AETI and PCP stats per Land cover type</h3>
 Let us now find the Mean and median annual AETI and PCP per land cover type.
 <pre><code class="neutral">
 ## Set the region to ULB
@@ -222,13 +222,13 @@ r.univar -t AETI_annual_2017_18 zones=L1_LCC_2018 sep=, output=AETI_stats_2017_1
 r.univar -t PCP_annual_2017_18 zones=L1_LCC_2018 sep=, output=PCP_stats_2017_18.csv
 </code></pre>
 
-h3>Your tasks</h3>
+<h3>Your tasks</h3>
 Follow the above steps (3-6) to compute Annual AETI and PCP maps for the years 2018/19 and 2019/20. <br>
 <ul>
     <li>Compute univariate statistics of Annual AETI and PCP of crop years 2018/19> and 2019/20</li>
     <li>Compute Landcover based statistics of Annual AETI and PCP of crop years 2018/19> and 2019/20</li>
     <li>Prepare maps of Annual AETI and PCP with a nice layout (in QGIS?)</a></li>
-    <li>Submit a short report (max 3 pages) with the results in OCW platform</a></li>
+    <li>Submit a short report (max 3 pages) with the results in OCW platform <note>midnight 12 July 2021</note></a></li>
 </ul>
 
 
