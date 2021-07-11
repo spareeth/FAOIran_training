@@ -128,26 +128,26 @@ g.list rast mapset=. pattern=L1_AETI_2019*|cat
 
         <h3>Step 2: Apply scale factor</h3>
         Both AETI and PCP needs to be scaled by a factor of 0.1 as per the WaPOR documentation before using for analysis. Below code apply the scale to all the maps in one go using a for loop. This time we want to restrict the data within Urmia lake basin boundary. So we apply a mask, before applying scale factor.
-            <pre><code class="neutral">
-    ## Set the region to ULB
-    g.region vect=ulb res=250 -a
-    ## Apply a mask to restrict further analysis to ULB
-    r.mask vect=ulb --o
-    ## List all the AETI maps in Grass mapset
-    g.list rast mapset=. pattern=L1_AETI*|cat
-    ## let us use a 'for' loop to apply scale factor to all the AETI maps in the mapset in one go.
-    for i in `g.list rast mapset=. pattern=L1_AETI*|cat`; do
-        r.mapcalc "${i}_scaled = ${i} * 0.1"
-    done
-    ## press enter
-    ## List all the PCP maps in Grass mapset
-    g.list rast mapset=. pattern=L1_PCP*|cat
-    ## let us use a 'for' loop to apply scale factor to all the AETI maps in the mapset in one go.
-    for i in `g.list rast mapset=. pattern=L1_PCP*|cat`; do
-        r.mapcalc "${i}_scaled = ${i} * 0.1"
-    done
-    ## press enter
-        </code></pre>
+        <pre><code class="neutral">
+## Set the region to ULB
+g.region vect=ulb res=250 -a
+## Apply a mask to restrict further analysis to ULB
+r.mask vect=ulb --o
+## List all the AETI maps in Grass mapset
+g.list rast mapset=. pattern=L1_AETI*|cat
+## let us use a 'for' loop to apply scale factor to all the AETI maps in the mapset in one go.
+for i in `g.list rast mapset=. pattern=L1_AETI*|cat`; do
+    r.mapcalc "${i}_scaled = ${i} * 0.1"
+done
+## press enter
+## List all the PCP maps in Grass mapset
+g.list rast mapset=. pattern=L1_PCP*|cat
+## let us use a 'for' loop to apply scale factor to all the AETI maps in the mapset in one go.
+for i in `g.list rast mapset=. pattern=L1_PCP*|cat`; do
+    r.mapcalc "${i}_scaled = ${i} * 0.1"
+done
+## press enter
+    </code></pre>
 
     <h3>Step 3: Aggregate to seasonal maps</h3>
     Let us now aggregate the AETI and PCP maps to compute annual maps covering a crop year. Let us consider the crop year from October to September (next year).
@@ -201,9 +201,9 @@ r.mask vect=ulb --o
 # First list all the LCC maps
 g.list rast mapset=. pattern=L1_LCC*|cat
 # First let us assign category names to each land cover id as per WaPOR Catalog
-r.category map=wapor_LCC_mean_reclass rules=rules_reclass.txt sep=comma
+# https://wapor.apps.fao.org/catalog/WAPOR_2/1/L1_LCC_A
 # A text file with category details are developed and provided to you as 'rules_lcc.txt' inside 'Base_layers' folder.
-r.category map=L1_LCC_2018 rules=rules_lcc.txt sep=comma
+r.category map=L1_LCC_2018 rules=rules.txt sep=comma
 # Below command compute the surface area of each Land cover type in hectares.
 r.report L1_LCC_2018 units=k -e -n -h
 </code></pre>
@@ -221,6 +221,71 @@ r.univar -t AETI_annual_2017_18 zones=L1_LCC_2018 sep=, output=AETI_stats_2017_1
 # For Annual PCP
 r.univar -t PCP_annual_2017_18 zones=L1_LCC_2018 sep=, output=PCP_stats_2017_18.csv
 </code></pre>
+
+<h3>Step 7: Assign colors and prepare map layouts</h3>
+Once you have the annual AETI and PCP maps, you can assign meaningful palette to the maps and make a map layout. <br>
+<br>
+To apply a color palette in GRASS GIS, a module called <a href="https://grass.osgeo.org/grass78/manuals/r.colors.html" target="_blank">r.colors</a> is used. <br>
+For setting a layout we can use the user interface commands of GRASS GIS: <br>
+<a href="https://grass.osgeo.org/grass78/manuals/d.mon.html" target="_blank">Display a monitor</a> <br>
+<a href="https://grass.osgeo.org/grass78/manuals/d.rast.html" target="_blank">Display a raster in the monitor</a> <br>
+<a href="https://grass.osgeo.org/grass78/manuals/d.vect.htmll" target="_blank">Display a vector map</a> <br>
+<a href="https://grass.osgeo.org/grass78/manuals/d.legend.html" target="_blank">Add raster legend</a> <br>
+<a href="https://grass.osgeo.org/grass78/manuals/d.northarrow.html" target="_blank">Add North arrow</a> <br>
+<a href="https://grass.osgeo.org/grass78/manuals/d.barscale.html" target="_blank">Add scale</a><br>
+<br>
+In the below code snippet, let us create a nice layout for annual AETI and PCP maps <br>
+
+<pre><code class="neutral">
+## Set the region to ULB
+g.region vect=ulb res=250 -a
+## Apply a mask to restrict further analysis to ULB
+r.mask vect=ulb --o
+## Assign a color palette to Annual AETI map
+## below note that the color palette is inverted with (-n) flag and applied histo equalization using (-e) flags
+r.colors -n -e map=AETI_annual_2017_18 color=gyr
+## Assign a color palette to Annual AETI map
+r.colors map=PCP_annual_2017_18 color=precipitation
+
+## Create map layout for annual AETI
+# Open a monitor
+d.mon wx0
+# erase everything in the monitor
+d.erase -f
+# Display a raster map
+d.rast map=AETI_annual_2017_18
+# Display a vector map
+d.vect map=ulb type=boundary
+# Add raster legend
+d.legend -t -d raster=AETI_annual_2017_18 title="AETI(mm/year)" title_fontsize=20 font=sans fontsize=18
+# Add North arrow
+d.northarrow style=1b text_color=black
+# Add Scale
+d.barscale units=kilometers label=km
+
+# Before creating the next map layout erase everything in wx0 monitor
+d.erase -f
+
+# Now Create map layout for annual PCP
+# Display a raster map
+d.rast map=PCP_annual_2017_18
+# Display a vector map
+d.vect map=ulb type=boundary
+# Add raster legend
+d.legend -t -d raster=PCP_annual_2017_18 title=AETI title_fontsize=20 font=sans fontsize=18
+# Add North arrow
+d.northarrow style=1b text_color=black
+# Add Scale
+d.barscale units=kilometers label=km
+</code></pre>
+
+<note>d.barscale will not work in Lat/Lon locations as the horizontal scale distance changes with latitude. Try <a href="https://grass.osgeo.org/grass78/manuals/d.grid.html" target="_blank">d.grid </a>instead.</note>
+<br>
+<div class="imagebox">
+    <a href="images/map1.png" ><img style="width: 40%;" src="images/map1.png" alt="Annual AETI map" title="Annual AETI map"></a><br>
+    Annual AETI map
+</div>   
+
 
 <h3>Step 7: Export the maps to Geotiff format</h3>
 Once you have the annual AETI and PCP maps, it might be useful to have them in other formats like Geotif (.tif). With raster maps in .tif format, you can open them in any other software like QGIS to create map layouts or further analysis
@@ -242,8 +307,8 @@ r.out.gdal in=PCP_annual_2017_18 out=PCP_annual_2017_18.tif
 <h3>Your tasks</h3>
 Follow the above steps (3-6) to compute Annual AETI and PCP maps for the years 2018/19 and 2019/20. <br>
 <ul>
-    <li>Compute univariate statistics of Annual AETI and PCP of crop years 2018/19> and 2019/20</li>
-    <li>Compute Landcover based statistics of Annual AETI and PCP of crop years 2018/19> and 2019/20</li>
+    <li>Compute univariate statistics of Annual AETI and PCP of crop years 2018/19 and 2019/20</li>
+    <li>Compute Landcover based statistics of Annual AETI and PCP of crop years 2018/19 and 2019/20</li>
     <li>Prepare maps of Annual AETI and PCP with a nice layout (in QGIS?)</a></li>
     <li>Submit a short report (max 3 pages) with the results in OCW platform <note>midnight 12 July 2021</note></a></li>
 </ul>
