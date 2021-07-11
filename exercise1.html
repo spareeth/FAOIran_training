@@ -49,7 +49,7 @@
 		<li><a href="index.html">Installation steps</a></li>
         <li><a href="grassgis_intro.html">Introduction to GRASS GIS</a></li>
         <li><a href="grassgis_start.html">Start with GRASS GIS - first steps</a></li>
-        <li><a href="grassgis_explore.html">Explore features in GRASS GIS</a></li>
+        <li><a href="grassgis_explore.html">Explore features of GRASS GIS</a></li>
         <li><a href="exercise1.html">Exercise 1 - Seasonal aggregation and statistical analysis</a></li>
         <li><a href="exercise2.html">Exercise 2 - Spatio-temporal analysis of climatic data</a></li>
     </ul>
@@ -220,6 +220,23 @@ r.mask vect=ulb --o
 r.univar -t AETI_annual_2017_18 zones=L1_LCC_2018 sep=, output=AETI_stats_2017_18.csv
 # For Annual PCP
 r.univar -t PCP_annual_2017_18 zones=L1_LCC_2018 sep=, output=PCP_stats_2017_18.csv
+</code></pre>
+
+<h3>Step 7: Export the maps to Geotiff format</h3>
+Once you have the annual AETI and PCP maps, it might be useful to have them in other formats like Geotif (.tif). With raster maps in .tif format, you can open them in any other software like QGIS to create map layouts or further analysis
+
+<pre><code class="neutral">
+## navigate to the output folder where you want the exported raster maps in tif format
+cd /mnt/path/to/outputfolder
+g.region vect=ulb res=250 -a
+## Apply a mask to restrict further analysis to ULB 
+## If a mask is applied the exported map will be also clipped to the mask
+r.mask vect=ulb --o
+# Use the below commands to export the annual AETI and PCP to geotiff (.tif)
+# For Annual AETI
+r.out.gdal in=AETI_annual_2017_18 out=AETI_annual_2017_18.tif
+# For Annual PCP
+r.out.gdal in=PCP_annual_2017_18 out=PCP_annual_2017_18.tif
 </code></pre>
 
 <h3>Your tasks</h3>
