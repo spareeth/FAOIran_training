@@ -23,10 +23,11 @@ note{
 }
 
 hlt{
-    background: rgb(16, 32, 179);
-    color: rgb(248, 239, 239);
+    background: rgb(246, 247, 248);
+    color: #c74848;
     font-family: arial,sans-serif;
     font-style: italic;
+    font-size: 12px;
 }
 
 #container

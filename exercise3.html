@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Explore features in GRASS GIS</title>
+  <meta name="description" content="GRASS GIS course">
+  <meta name="author" content="Sajid Pareeth">
+  <link rel="shortcut icon" href="grass.png">
+
+  <script type="text/javascript" src="lib/jquery.js"></script>
+  <script type="text/javascript" src="lib/codetabs.js"></script>
+
+<!--
+<link rel="stylesheet" href="http://yandex.st/highlightjs/8.0/styles/default.min.css">
+<script src="http://yandex.st/highlightjs/8.0/highlight.min.js"></script>
+-->
+
+  <script type="text/javascript" src="lib/highlights/highlight.pack.js"></script>
+  <link rel="stylesheet" href="lib/highlights/styles/default.css">
+  <link rel="stylesheet" href="css/grassdocs.css">
+  <link rel="stylesheet" href="css/codetabs.css">
+
+<style type="text/css">
+.hljs{
+    display: none;
+    /*padding: 0em;*/
+}
+</style>
+
+</head>
+
+<body>
+
+  <div id="container">
+    <a href="https://grass.osgeo.org" title="GRASS GIS"><img src="images/grassgis_logo_colorlogo_text_whitebg.png" width="9.5%" height="9.5%" align="right" alt="GRASS GIS logo"></a>
+    <a href="https://un-ihe.org/" title="IHE Delft"><img src="images/IHE_logo.png" height="100%" align="left" alt="IHE Delft logo"></a>
+    <h1 class="notoc" align="center">Spatio-temporal analysis with GRASS GIS</h1>
+    <h3 class="notoc" align="center">IHE Delft Institute for Water Education</h3>
+<!--
+    <h3 class="notoc" align="center">November 3rd, 2017</h3>
+-->
+    <h3 class="notoc" align="center">The Netherlands</h3>
+    <p class="notoc" align="center">
+    <a href="https://www.un-ihe.org/sajid-pareeth" target="_blank">Dr. Sajid Pareeth</a>
+    </p>
+    <h2>Outline</h2>
+    <ul>
+		<li><a href="index.html">Installation steps</a></li>
+        <li><a href="grassgis_intro.html">Introduction to GRASS GIS</a></li>
+        <li><a href="grassgis_start.html">Start with GRASS GIS - first steps</a></li>
+        <li><a href="grassgis_explore.html">Explore features of GRASS GIS</a></li>
+        <li><a href="exercise1.html">Exercise 1 - Seasonal aggregation and statistical analysis</a></li>
+        <li><a href="exercise2.html">Exercise 2 - Spatio-temporal analysis of climatic data (optional)</a></li>
+        <li><a href="exercise3.html">Exercise 3 - Processing climatic data from GLDAS</a></li>
+    </ul>
+    <p style="border-top-style: solid; border-width: 5px; border-color: rgb(130, 130, 130); padding-top: 5px; padding_bottom: 5px;" align="center"></p>
+    <h2><a name="exercise3">Exercise 3 - Processing climatic data from GLDAS</a></h2>
+    <h3>Objectives</h3>
+    <b>Aim:</b> <br>
+    <br>
+    The main objective of this exercise is to explain step by step procedure to process climatic inputs for SEBAL model (PySEBAL). Here we will use the three hour data from <a href="https://ldas.gsfc.nasa.gov/gldas" target="_blank">GLDAS</a>.<br>
+    <br>
+    <b>GLDAS data:</b> <br>
+    <br>
+    GLDAS data are available to download from this <a href="https://hydro1.gesdisc.eosdis.nasa.gov/data/GLDAS/GLDAS_NOAH025_3H.2.1/" target="_blank">link</a>.<br>
+    <br>
+    Detailed documentation about GLDAS 2.1 product is available <a href="https://hydro1.gesdisc.eosdis.nasa.gov/data/GLDAS/GLDAS_NOAH025_3H.2.1/doc/README_GLDAS2.pdf" target="_blank">here</a>.<br>
+    <br>
+
+    <b>Specific requirements</b> <br>
+    <br>
+    For running models like PySEBAL meteo data with following properties are required:
+    <div class="imagebox">
+        <a href="images/gldas1.png" ><img style="width: 25%;" src="images/gldas1.png" alt="Meteo data required" title="Meteo data required"></a><br>
+        Meteo data required
+    </div>
+    The units at which GLDAS provide air temperature (K) and Pressure(Pa) are different. Further GLDAS provide specific humidity and PySEBAL require relative humidity as input. To match the requirements for PySEBAL following conversion steps have to be performed:
+    <ul>
+		<li>Convert GLDAS air temperature from Kelvin to Deg C </li>
+        <li>Convert the unit of GLDAS pressure from Pa to Milli bar (Mb)</li>
+        <li>Convert specific humidity to relative humidity following the description <a href="https://earthscience.stackexchange.com/questions/2360/how-do-i-convert-specific-humidity-to-relative-humidity/" target="_blank">here</a></li>
+        <li>Compute daily averages of SWdown, Ws, Tair, P and Rh</li>
+        <li>Compute instantaneous SWdown, Ws, Tair, P and Rh maps representing the time of acquisition of satellite image. As the GLDAS data is three hourly, for the Landsat satellite which has an acquisition time of ~07:30 GMT over Urmia Lake Basin, an average of GLDAS data at 06:00 and 09:00 GMT are computed.</li>
+    </ul>
+    <h3>Step 1: Install <i>gldas</i> python package</h3>
+    As the temporal resolution of GLDAS data is three hours, downloading GLDAS data manually is not a practical approach. Instead we will use a python package called <a href="https://pypi.org/project/gldas/" target="_blank">gldas</a> to download data from a START date to END date. <br>
+    <br>
+    To install the package open MobaXterm and an Ubuntu session.
+    <div class="imagebox">
+		<img style="width: 50%;" src="images/moba1.gif" alt="MobaXterm with Ubuntu Linux open"><br>
+		MobaXterm with Ubuntu Linux open (Highlighted where you should double click to open Ubuntu)
+	</div>
+		<pre><code class="neutral">
+## In the Ubuntu session in MobaXterm,
+## Type in the following command to install the python package "gldas"
+## Remember you must be connected to internet
+pip3 install gldas
+## press enter
+	</code></pre>
+
+    <h3>Step 2: Bulk Download GLDAS data</h3>
+    To download GLDAS data you need to have a login to NASA Earth data repository. So register and create a user login in the <a href="https://urs.earthdata.nasa.gov/" target="_blank">NASA earthdata</a>  website. <br>
+    <div class="imagebox">
+		<img style="width: 50%;" src="images/earthdata.png" alt="NASA Earthdata login page"><br>
+		NASA Earthdata login page
+	</div>
+    <br>
+    Now let us download GLDAS data in one step for three days from <b>23 May 2019 to 25 May 2019</b> using the gldas package installed in the previous step. To download the data we will use the command <hlt>gldas_download</hlt> offered by the <i>gldas</i> package installed in the previous step<br>.
+
+    <pre><code class="neutral">
+## To see the help of gldas_download command
+gldas_download --h
+## Below code will download the GLDAS data between the dates provided in the command.
+gldas_download -s 2019-05-23 -e 2019-05-25 --product GLDAS_Noah_v21_025 --username @@@@ --password @@@@ /mnt/path/to/folder
+## Note that the last argument in above command is path to a folder where the downloaded files will be stored.
+## Note: you have to replace @@@@ with your username and password created in earthdata login.
+</code></pre>
+After downloading, you can see that the gldas_download command keep the folder structure as the data repository.
+<div class="imagebox">
+    <a href="images/gldas_tree.png" ><img style="width: 10%;" src="images/gldas_tree.png" alt="Folder structure after download" title="Folder structure after download"></a><br>
+    Folder structure after download
+</div>   
+    <h3>Step 3: Processing single gldas data file</h3>
+    Let us now see how to process a single NetCDF file (.nc4) dowloaded from GLDAS using the previous step and perform the required conversions for PySEBAL as explained in the beginning of this exercise.<br>
+    <br> 
+    For example let us consider the GLDAS data representing 06:00 hours on 24 May 2019 which also happens to be a date when there is a Landsat acquisition over our study area - MIS. After the download, you will find this data inside <hlt>/mnt/path/to/youroutputfolder/2019/144</hlt>. Because 144 is the corresponding Julian date of 24 May in 2019. <br>
+    <br>
+    The file name is <b><i> GLDAS_NOAH025_3H.A20190524.0600.021.nc4</i></b> <br>
+    <br>
+    <b>Structure of File Name</b><br>
+    <br>
+    The GLDAS file name follows a particular structure.<br>
+    <br>
+    <hlt>GLDAS_NOAH025_3H</hlt> represents the name, spatial resolution (025 means 0.25 degree resolution) and temporal resolution (3H means three hour data)<br>
+    <hlt>A20190524</hlt> represents the date of acquisition <br>
+    <hlt>0600</hlt> represents the time (in this case 06:00 GMT) the parameters are computed for <br>
+    <hlt>021</hlt> represents the version of GLDAS data, in this case 2.1 <br>
+    <hlt>nc4</hlt> represents the extension and format of the data, in this case netCDF4 <br>
+    <br>
+    Now let us see how to read the metadata of this file in command line using gdal tools.
+
+    <pre><code class="neutral">
+## change directory to where you have downloaded the GLDAS data using the below
+cd /mnt/path/to/youroutputfolder/2019/144
+## Display metadata of the 'GLDAS_NOAH025_3H.A20190524.0600.021.nc4'
+gdalinfo GLDAS_NOAH025_3H.A20190524.0600.021.nc4
+## press enter
+    </code></pre>
+
+<div class="imagebox">
+    <a href="images/meta1.png" ><img style="width: 40%;" src="images/meta1.png" alt="Metadata of GLDAS data part1" title="Metadata of GLDAS data part1"></a>
+    <a href="images/meta2.png" ><img style="width: 40%;" src="images/meta2.png" alt="Metadata of GLDAS data part2" title="Metadata of GLDAS data part2"></a><br>
+    Metadata of GLDAS data
+</div>  
+
+In the metadata, under <b>Subdatasets:</b> all the parameters provided as subdatasets are listed. <b>These subdataset names are used in the further steps to process individual parameters.</b> <br>
+<br>
+For example, <hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Tair_f_inst</hlt> is the name of air temperature grid at 06:00 on 24 May 2019 and we will use this name to extract/process this single grid. The codes of the parameters are listed in the <a href="https://hydro1.gesdisc.eosdis.nasa.gov/data/GLDAS/GLDAS_NOAH025_3H.2.1/doc/README_GLDAS2.pdf" target="_blank">GLDAS user manual</a> (Table 3.1). <br>
+<br>
+So for PySEBAL we need the following subdatasets from a single GLDAS file: <br>
+<br>
+<hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Qair_f_inst</hlt> - Specific humidity (Kg/Kg) <br>
+<hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Psurf_f_inst</hlt> - Surface Pressure (Pa) <br>
+<hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Tair_f_inst</hlt> - Air Temperature (K) <br>
+<hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Wind_f_inst</hlt> - Wind speed (m/s) <br>
+<hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":SWDown_f_inst</hlt> - Downward short-wave radiation flux (W m-2) <br>
+<br>
+Now let us extract each of the above subdatasets and convert them into tif file. For this we will use a gdal command called <hlt>gdal_translate</hlt> which is a global conversion tool for all kind of raster formats. Detailed documentation on <hlt>gdal_translate</hlt> is given <a href="https://gdal.org/programs/gdal_translate.html" target="_blank">here</a>.
+
+    <pre><code class="neutral">
+##  Convert specific humidity to tif - below command
+gdal_translate NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Qair_f_inst GLDAS_NOAH025_3H_20190524_0600_Qair.tif
+## Convert Surface Pressure to tif - below command
+gdal_translate NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Psurf_f_inst GLDAS_NOAH025_3H_20190524_0600_Psurf.tif
+## Convert air temperature to tif - below command
+gdal_translate NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Tair_f_inst GLDAS_NOAH025_3H_20190524_0600_Tair.tif
+## Convert Wind speed to tif - below command
+gdal_translate NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Wind_f_inst GLDAS_NOAH025_3H_20190524_0600_Wind.tif
+## Convert Short wave downward radiation to tif - below command
+gdal_translate NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":SWdown_f_tavg GLDAS_NOAH025_3H_20190524_0600_SWdown.tif
+## Press enter
+    </code></pre>
+
+Now that we have the required parameters of 24 May 2019 in tif format, let us open the air temperature map in QGIS and see how it looks! So open QGIS and open raster "GLDAS_NOAH025_3H_20190524_0600_Tair.tif" from the folder you have saved the converted files in the last set of commands.
+
+<div class="imagebox">
+    <a href="images/gldas2.png" ><img style="width: 50%;" src="images/gldas2.png" alt="GLDAS Tair data displayed in QGIS" title="GLDAS Tair data displayed in QGIS"></a><br>
+    GLDAS Tair data displayed in QGIS
+</div> 
+Let us also zoom to ULB and have a look at the Tair map. Remember the resolution of data is 0.25 degrees.<br>
+<div class="imagebox">
+    <a href="images/gldas3.png" ><img style="width: 50%;" src="images/gldas3.png" alt="GLDAS Tair data zoomed to ULB" title="GLDAS Tair data zoomed to ULB"></a><br>
+    GLDAS Tair data displayed in QGIS and zoomed to ULB
+</div> 
+
+<h4>Unit conversion of GLDAS parameters for PySEBAL</h4>
+Now let us see how to do unit conversion of all the five parameters required for PySEBAL. One additional step is to clip the unit converted maps to ULB as we are only interested in that region not global. <br>
+<br>
+For further steps let us move to GRASS GIS as it is easier to do spatial and temporal analysis with GRASS library. We will create a new location and mapset for processing GLDAS data for ULB.<br>
+<br>
+<note>Remember, GRASS GIS always work in a location and mapset. Refer to earlier chapters to refresh the related details</note>. <br>
+<br>
+<b>Create New GRASS GIS Location and mapset for gldas data processing</b><br>
+    <pre><code class="neutral">
+# Create (-c) just the location called "latlong" in epsg:4326 and exit (-e)
+# Remember name of the location can be anything, give a logical name
+# Use the same grass data folder which you have used before.
+grass78 epsg:4326 /mnt/d/grassdata/latlong -c -e
+# Create (-c) mapset called "ulb_gldas" inside the location "latlong" and open GRASS GIS in "latlong/ulb_gldas" mapset
+grass78 /mnt/d/grassdata/latlong/ulb_gldas -c
+# "-c" flag in above command is required only one time to create the mapset ulb_wapor
+# Afterwards use below command to just start the existing mapset.
+# grass78 /mnt/d/grassdata/latlong/ulb_gldas
+    </code></pre>
+<br>
+<b>Import the ulb vector file and the gldas tif files:</b><br>
+    <pre><code class="neutral">
+## IMPORT VECTOR DATA: Boundaries of Urmia Lake basin, Miandoab Irrig scheme and Urmia Lake
+## Navigate (cd) to the 'Base_layers' folder provided to you
+cd /path/to/Base_layers # change the path to actual path in your computer
+# Import 'Urmia Lake Basin' boundary shapefile into a vector in Grass GIS
+v.import in=UrmiaLB.shp out=ulb
+# Import 'Miandoab Irrigation Scheme' boundary shapefile into a vector in Grass GIS
+v.import in=Miandoab.shp out=mis
+# Import 'Urmia Lake' boundary shapefile into a vector in Grass GIS
+v.import in=LakeUrmia.shp out=lake
+# set the computational region to Urmia Lake basin and set the computational resolution to 0.25 degrees
+g.region vector=ulb res=0.25 -a
+# Now let us import all the tif files we created for the date - 24 May 2019:
+# Note that below command with r.import automatically clip the global data into ULB region
+# Import and clip Tair
+r.import input=GLDAS_NOAH025_3H_20190524_0600_Tair.tif output=GLDAS_NOAH025_3H_20190524_0600_Tair extent=region resolution=region -o --o
+# Import and clip specific humidity
+r.import input=GLDAS_NOAH025_3H_20190524_0600_Qair.tif output=GLDAS_NOAH025_3H_20190524_0600_Qair extent=region resolution=region -o --o
+# Import and clip Wind speed
+r.import input=GLDAS_NOAH025_3H_20190524_0600_Wind.tif output=GLDAS_NOAH025_3H_20190524_0600_Wind extent=region resolution=region -o --o
+# Import and clip Short wave radiation
+r.import input=GLDAS_NOAH025_3H_20190524_0600_SWdown.tif output=GLDAS_NOAH025_3H_20190524_0600_SWdown extent=region resolution=region -o --o
+# Import and clip Surface Pressure
+r.import input=GLDAS_NOAH025_3H_20190524_0600_Psurf.tif output=GLDAS_NOAH025_3H_20190524_0600_Psurf extent=region resolution=region -o --o
+    </code></pre>
+
+<b>Unit conversions:</b><br>
+Now that we ave all the data in GRASS mapset, let us do the unit conversions in command line using raster map calculator. <br>
+<br>
+    <pre><code class="neutral">
+## Air temperature from Kelvin to degree celsius
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Tair_deg = GLDAS_NOAH025_3H_20190524_0600_Tair - 273.15" --o
+## Pressure convert from pa to mb
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Psurf_mb = GLDAS_NOAH025_3H_20190524_0600_Psurf / 100" --o
+## Convert specific humidity to relative humidity
+## Humidity according to the url: https://earthscience.stackexchange.com/questions/2360/how-do-i-convert-specific-humidity-to-relative-humidity
+# Saturation vapour pressure
+r.mapcalc "es = 6.112 * exp((17.67 * GLDAS_NOAH025_3H_20190524_0600_Tair_deg) / (GLDAS_NOAH025_3H_20190524_0600_Tair_deg + 243.5))" --o
+# vapour pressure
+r.mapcalc "e = (GLDAS_NOAH025_3H_20190524_0600_Qair * GLDAS_NOAH025_3H_20190524_0600_Psurf_mb) / (0.378 * GLDAS_NOAH025_3H_20190524_0600_Qair + 0.622)" --o
+# Calculate Relative humidity
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Rh1 = (e / es) * 100" --o
+# Remove outliers
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Rh = float(if(GLDAS_NOAH025_3H_20190524_0600_Rh1 > 100, 100, if(GLDAS_NOAH025_3H_20190524_0600_Rh1 < 0, 0, GLDAS_NOAH025_3H_20190524_0600_Rh1)))" --o  
+    </code></pre>
+
+
+<h3>Your tasks</h3>
+1) Follow the above steps to process GLDAS data for the Landsat dates from the assigned months to you (mandatory for PySEBAL). <br>
+2) Follow the above steps to process GLDAS data for the other two dates downloaded - 23 May 2019 and 25 May 2019 (Optional)<br>
+
+
+    <p><i>Last changed: 2021-07-07</i></p>
+    <p>
+    <a href="http://grass.osgeo.org/grass78/manuals/">GRASS GIS manual main index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/topics.html">Topics index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/keywords.html">Keywords Index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/full_index.html">Full index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/raster.html">Raster index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/vector.html">Vector index</a> |
+    <a href="http://grass.osgeo.org/grass78/manuals/temporal.html">Temporal index</a> |
+    </p>
+    <p>
+        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" src="images/ccbysa.png"></a>
+        <br>
+        Licensed under a <b><a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative Commons Attribution-ShareAlike 4.0 International License</a></b> - Thanks to <a href="http://www4.ncsu.edu/~vpetras/index.html" target="_blank"><b>Vaclav Petras</b></a> for the style.
+        </p>
+      </div>
+    
+    </body>
+    </html>
