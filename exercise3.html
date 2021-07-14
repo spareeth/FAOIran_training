@@ -164,7 +164,7 @@ So for PySEBAL we need the following subdatasets from a single GLDAS file: <br>
 <hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Psurf_f_inst</hlt> - Surface Pressure (Pa) <br>
 <hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Tair_f_inst</hlt> - Air Temperature (K) <br>
 <hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":Wind_f_inst</hlt> - Wind speed (m/s) <br>
-<hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":SWDown_f_inst</hlt> - Downward short-wave radiation flux (W m-2) <br>
+<hlt>NETCDF:"GLDAS_NOAH025_3H.A20190524.0600.021.nc4":SWdown_f_inst</hlt> - Downward short-wave radiation flux (W m-2) <br>
 <br>
 Now let us extract each of the above subdatasets and convert them into tif file. For this we will use a gdal command called <hlt>gdal_translate</hlt> which is a global conversion tool for all kind of raster formats. Detailed documentation on <hlt>gdal_translate</hlt> is given <a href="https://gdal.org/programs/gdal_translate.html" target="_blank">here</a>.
 
@@ -242,32 +242,171 @@ r.import input=GLDAS_NOAH025_3H_20190524_0600_Psurf.tif output=GLDAS_NOAH025_3H_
     </code></pre>
 
 <b>Unit conversions:</b><br>
-Now that we ave all the data in GRASS mapset, let us do the unit conversions in command line using raster map calculator. <br>
+Now that we have all the data in GRASS mapset, let us do the unit conversions in command line using raster map calculator. <br>
 <br>
     <pre><code class="neutral">
 ## Air temperature from Kelvin to degree celsius
-r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Tair_deg = GLDAS_NOAH025_3H_20190524_0600_Tair - 273.15" --o
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Tair_final = GLDAS_NOAH025_3H_20190524_0600_Tair - 273.15" --o
 ## Pressure convert from pa to mb
-r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Psurf_mb = GLDAS_NOAH025_3H_20190524_0600_Psurf / 100" --o
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Psurf_final = GLDAS_NOAH025_3H_20190524_0600_Psurf / 100" --o
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_SWdown_final = GLDAS_NOAH025_3H_${dt}_SWdown"
+# Wind speed (no conversion required)
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Wind_final = GLDAS_NOAH025_3H_${dt}_Wind"
 ## Convert specific humidity to relative humidity
 ## Humidity according to the url: https://earthscience.stackexchange.com/questions/2360/how-do-i-convert-specific-humidity-to-relative-humidity
-# Saturation vapour pressure
+# Calculate Saturation vapour pressure
 r.mapcalc "es = 6.112 * exp((17.67 * GLDAS_NOAH025_3H_20190524_0600_Tair_deg) / (GLDAS_NOAH025_3H_20190524_0600_Tair_deg + 243.5))" --o
-# vapour pressure
+# Calculate vapour pressure
 r.mapcalc "e = (GLDAS_NOAH025_3H_20190524_0600_Qair * GLDAS_NOAH025_3H_20190524_0600_Psurf_mb) / (0.378 * GLDAS_NOAH025_3H_20190524_0600_Qair + 0.622)" --o
 # Calculate Relative humidity
-r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Rh1 = (e / es) * 100" --o
-# Remove outliers
-r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Rh = float(if(GLDAS_NOAH025_3H_20190524_0600_Rh1 > 100, 100, if(GLDAS_NOAH025_3H_20190524_0600_Rh1 < 0, 0, GLDAS_NOAH025_3H_20190524_0600_Rh1)))" --o  
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Rh = (e / es) * 100" --o
+# Remove outliers from relative humidity, > 100 = 100 and < 0 is 0
+r.mapcalc "GLDAS_NOAH025_3H_20190524_0600_Rh_final = float(if(GLDAS_NOAH025_3H_20190524_0600_Rh > 100, 100, if(GLDAS_NOAH025_3H_20190524_0600_Rh < 0, 0, GLDAS_NOAH025_3H_20190524_0600_Rh)))" --o  
     </code></pre>
 
+Now that you have corrected all the required parameters for a single time, let us put it all together to run the above commands under step 3 with a 'for' loop over all the .nc4 files of a day, in this case 2019 144 (24 May 2019). <br>
+<br>
+
+    <pre><code class="neutral">
+#!/bin/bash
+## This script process a single day GLDAS data and do all the required conversions needed for PySEBAL
+## GENERAL ##
+if [ -z "$GISBASE" ] ; then
+    echo "You must be in GRASS GIS to run this program." >&2
+    exit 1
+fi
+# Set a environment to enable overwrite by default
+export GRASS_OVERWRITE=1
+
+# Navigate to the folder containing single day .nc4 files
+cd /mnt/path/to/youroutputfolder/2019/144
+
+# set the computational region to Urmia Lake basin and set the computational resolution to 0.25 degrees
+g.region vector=ulb res=0.25 -a
+
+# For loop to process all the .nc files in one go
+for i in `ls GLDAS*.nc4`; do
+    dt=`echo ${i}|cut -d. -f2-3`
+    #  Convert specific humidity to tif - below command
+    gdal_translate NETCDF:"${i}":Qair_f_inst ${TMP}/GLDAS_NOAH025_3H_${dt}_Qair.tif
+    # Convert Surface Pressure to tif - below command
+    gdal_translate NETCDF:"${i}":Psurf_f_inst ${TMP}/GLDAS_NOAH025_3H_${dt}_Psurf.tif
+    # Convert air temperature to tif - below command
+    gdal_translate NETCDF:"${i}":Tair_f_inst ${TMP}/GLDAS_NOAH025_3H_${dt}_Tair.tif
+    # Convert Wind speed to tif - below command
+    gdal_translate NETCDF:"${i}":Wind_f_inst ${TMP}/GLDAS_NOAH025_3H_${dt}_Wind.tif
+    # Convert Short wave downward radiation to tif - below command
+    gdal_translate NETCDF:"${i}":SWdown_f_tavg ${TMP}/GLDAS_NOAH025_3H_${dt}_SWdown.tif
+    # Import to GRASS
+    # Import and clip specific humidity
+    r.import in=GLDAS_NOAH025_3H_${dt}_Qair.tif out=GLDAS_NOAH025_3H_${dt}_Qair -o
+    # Import and clip Surface Pressure
+    r.import in=GLDAS_NOAH025_3H_${dt}_Psurf.tif out=GLDAS_NOAH025_3H_${dt}_Psurf -o
+    # Import and clip Tair
+    r.import in=GLDAS_NOAH025_3H_${dt}_Tair.tif out=GLDAS_NOAH025_3H_${dt}_Tair -o
+    # Import and clip Wind speed
+    r.import in=GLDAS_NOAH025_3H_${dt}_Wind.tif out=GLDAS_NOAH025_3H_${dt}_Wind -o
+    # Import and clip Short wave radiation
+    r.import in=GLDAS_NOAH025_3H_${dt}_SWdown.tif out=GLDAS_NOAH025_3H_${dt}_SWdown -o
+    # Unit conversion
+    # Air temperature from Kelvin to degree celsius
+    r.mapcalc "GLDAS_NOAH025_3H_${dt}_Tair_final = GLDAS_NOAH025_3H_${dt}_Tair - 273.15"
+    # Short wave radiation (no conversion required)
+    r.mapcalc "GLDAS_NOAH025_3H_${dt}_SWdown_final = GLDAS_NOAH025_3H_${dt}_SWdown"
+    # Wind speed (no conversion required)
+    r.mapcalc "GLDAS_NOAH025_3H_${dt}_Wind_final = GLDAS_NOAH025_3H_${dt}_Wind"
+    ## Pressure convert from pa to mb
+    r.mapcalc "GLDAS_NOAH025_3H_${dt}_Psurf_final = GLDAS_NOAH025_3H_${dt}_Psurf / 100"
+    ## Humidity according to the url: https://earthscience.stackexchange.com/questions/2360/how-do-i-convert-specific-humidity-to-relative-humidity
+    r.mapcalc "es = 6.112 * exp((17.67 * GLDAS_NOAH025_3H_${dt}_Tair_final) / (GLDAS_NOAH025_3H_${dt}_Tair_final + 243.5))" --o
+    r.mapcalc "e = (GLDAS_NOAH025_3H_${dt}_Qair_final * GLDAS_NOAH025_3H_${dt}_Psurf_final) / (0.378 * GLDAS_NOAH025_3H_${dt}_Qair_final + 0.622)"
+    r.mapcalc "GLDAS_NOAH025_3H_${dt}_Rh = (e / es) * 100"
+    # Final Relative humidity in %
+    r.mapcalc "GLDAS_NOAH025_3H_${dt}_Rh_final = float(if(GLDAS_NOAH025_3H_${dt}_Rh > 100, 100, if(GLDAS_NOAH025_3H_${dt}_Rh < 0, 0, GLDAS_NOAH025_3H_${dt}_Rh)))"
+done
+    </code></pre>
+With the above for loop, you have processed all the 5 required parameters (Tair, Rh, Wind speed, Psurf and SWDown) - clipped and converted to the required units from 8 .nc4 files in a day. <br>
+<br>
+In short the last code snippet with for loop is all you want to process all the .nc files in a day. Also remember that you have to run this script inside a GRASS GIS session.
+You can copy the entire code in the above snippet to command line and enter to run, or create a script file. <br>
+<br>
+<b>How to create a script file !</b><br>
+<br>
+Copy all the code in the above snippet and paste into notepad. Save it as "myscript.sh". <br>
+<br>
+Follow the below command to run the script.
+
+    <pre><code class="neutral">
+# run the following command to run the above saved script file
+sh myscript.sh
+# press enter
+    </code></pre>
+
+    <h3>Step 4: Aggregating to daily average and instantaneous maps</h3>
+As explained earlier, PySEBAL require all parameters in two levels per day - instantaneous corresponding to the acquisition time of Landsat and Daily average<br>
+In this step we will use the <a href="https://grass.osgeo.org/grass78/manuals/r.series.html" target="_blank">r.series</a> module in GRASS GIS.<br>
+    <br> 
+    <b>Instantaneous</b> <br>
+Landsat acquisition time is around 7:30 in the morning. So let us consider the average of 0600 and 0900 time GLDAS parameters as instantaneous. <br>
+    <pre><code class="neutral">
+# Set the date in the same format as GLDAS used in the name.
+dt="20190524"
+# set the first time
+t1="0600"
+# set the second time
+t2="0900"
+### COMPUTING THE INSTANTANEOUS USING AVERAGE OF 9:00 and 12:00
+r.series input="GLDAS_NOAH025_3H_A${dt}.${t1}_Tair_final,GLDAS_NOAH025_3H_A${dt}.${t2}_Tair_final" output=GLDAS_NOAH025_3H_A${dt}_Tair_inst method=average
+r.series input="GLDAS_NOAH025_3H_A${dt}.${t1}_SWdown_final,GLDAS_NOAH025_3H_A${dt}.${t2}_SWdown_final" output=GLDAS_NOAH025_3H_A{dt}_SWdown_inst method=average
+r.series input="GLDAS_NOAH025_3H_A2${dt}.${t1}_Wind_final,GLDAS_NOAH025_3H_A${dt}.${t2}_Wind_final" output=GLDAS_NOAH025_3H_A{dt}_Wind_inst method=average
+r.series input="GLDAS_NOAH025_3H_A${dt}.${t1}_Rh_final,GLDAS_NOAH025_3H_A${dt}.${t2}_Rh_final" output=GLDAS_NOAH025_3H_A{dt}_Rh_inst method=average		
+    </code></pre>
+    <b>Daily Average</b> <br>
+
+    <pre><code class="neutral">
+dt="20190524"
+## Save the names of all 8 maps representing the date as defined in dt variable ##
+MAPS1=`g.list rast pattern=GLDAS_NOAH025_3H_A${dt}.*_Tair_final$ sep=, map=.|cat`
+MAPS2=`g.list rast pattern=GLDAS_NOAH025_3H_A${dt}.*_SWdown_final$ sep=, map=.|cat`
+MAPS3=`g.list rast pattern=GLDAS_NOAH025_3H_A${dt}.*_Wind_final$ sep=, map=.|cat`
+MAPS4=`g.list rast pattern=GLDAS_NOAH025_3H_A${dt}.*_Rh_final$ sep=, map=.|cat`	
+## USe the above maps as input to create daily averages
+r.series input=${MAPS1} output=GLDAS_NOAH025_3H_A${dt}_Tair_24 method=average
+r.series input=${MAPS2} output=GLDAS_NOAH025_3H_A${dt}_SWdown_24 method=average
+r.series input=${MAPS3} output=GLDAS_NOAH025_3H_A${dt}_Wind_24 method=average
+r.series input=${MAPS4} output=GLDAS_NOAH025_3H_A${dt}_Rh_24 method=average
+    </code></pre>
+<b>
+The maps with names ending with "*_inst" are instaneous maps and those maps with names ending with "*_24" are daily average maps. <br>
+</b>
+<h3>Step 5: Additional step - spline interpolation to improve spatial resolution (~ 1km)</h3>
+This step is an additional step which is not mandatory for PySEBAL. Though it improves the spatial continuity in the map, thus resucing the pixelated effects in PySEBAL outputs. <br>
+For the spatial interpolation we will use the <a href="https://grass.osgeo.org/grass78/manuals/r.resamp.bspline.html" target="_blank">r.resamp.bspline</a> module in GRASS GIS to perform bicubic spline interpolation.
+    <pre><code class="neutral">
+# set the computational region to a higher resolution (~ 1km))
+cd /mnt/path/to/youroutputfolder/2019/144
+g.region vect=ulb res=0.0625 -a
+# run the bspline interpolation on all the instantaneous maps
+# and save the interpolated map into .tif format
+for i in `g.list rast pattern=*inst$ map=.`; do 
+    r.resamp.bspline in=${i} out=${i}_interp method=bicubic
+    r.out.gdal in=${i}_interp out=${i}_interp.tif
+done
+# run the bspline interpolation on all the daily average maps
+# and save the interpolated map into .tif format
+for i in `g.list rast pattern=*24$ map=.`; do 
+    r.resamp.bspline in=${i} out=${i}_interp method=bicubic
+    r.out.gdal in=${i}_interp out=${i}_interp.tif
+done
+    </code></pre>
 
 <h3>Your tasks</h3>
 1) Follow the above steps to process GLDAS data for the Landsat dates from the assigned months to you (mandatory for PySEBAL). <br>
+
 2) Follow the above steps to process GLDAS data for the other two dates downloaded - 23 May 2019 and 25 May 2019 (Optional)<br>
 
 
-    <p><i>Last changed: 2021-07-07</i></p>
+    <p><i>Last changed: 2021-07-14</i></p>
     <p>
     <a href="http://grass.osgeo.org/grass78/manuals/">GRASS GIS manual main index</a> |
     <a href="http://grass.osgeo.org/grass78/manuals/topics.html">Topics index</a> |
