@@ -279,7 +279,8 @@ fi
 export GRASS_OVERWRITE=1
 
 # Navigate to the folder containing single day .nc4 files
-cd /mnt/path/to/youroutputfolder/2019/144
+INDAT="/mnt/g/temp/gldas/2019/143"
+cd ${INDAT}
 
 # set the computational region to Urmia Lake basin and set the computational resolution to 0.25 degrees
 g.region vector=ulb res=0.25 -a
@@ -288,15 +289,15 @@ g.region vector=ulb res=0.25 -a
 for i in `ls GLDAS*.nc4`; do
     dt=`echo ${i}|cut -d. -f2-3`
     #  Convert specific humidity to tif - below command
-    gdal_translate NETCDF:"${i}":Qair_f_inst ${TMP}/GLDAS_NOAH025_3H_${dt}_Qair.tif
+    gdal_translate NETCDF:"${i}":Qair_f_inst GLDAS_NOAH025_3H_${dt}_Qair.tif
     # Convert Surface Pressure to tif - below command
-    gdal_translate NETCDF:"${i}":Psurf_f_inst ${TMP}/GLDAS_NOAH025_3H_${dt}_Psurf.tif
+    gdal_translate NETCDF:"${i}":Psurf_f_inst GLDAS_NOAH025_3H_${dt}_Psurf.tif
     # Convert air temperature to tif - below command
-    gdal_translate NETCDF:"${i}":Tair_f_inst ${TMP}/GLDAS_NOAH025_3H_${dt}_Tair.tif
+    gdal_translate NETCDF:"${i}":Tair_f_inst GLDAS_NOAH025_3H_${dt}_Tair.tif
     # Convert Wind speed to tif - below command
-    gdal_translate NETCDF:"${i}":Wind_f_inst ${TMP}/GLDAS_NOAH025_3H_${dt}_Wind.tif
+    gdal_translate NETCDF:"${i}":Wind_f_inst GLDAS_NOAH025_3H_${dt}_Wind.tif
     # Convert Short wave downward radiation to tif - below command
-    gdal_translate NETCDF:"${i}":SWdown_f_tavg ${TMP}/GLDAS_NOAH025_3H_${dt}_SWdown.tif
+    gdal_translate NETCDF:"${i}":SWdown_f_tavg GLDAS_NOAH025_3H_${dt}_SWdown.tif
     # Import to GRASS
     # Import and clip specific humidity
     r.import in=GLDAS_NOAH025_3H_${dt}_Qair.tif out=GLDAS_NOAH025_3H_${dt}_Qair -o
@@ -315,10 +316,12 @@ for i in `ls GLDAS*.nc4`; do
     r.mapcalc "GLDAS_NOAH025_3H_${dt}_SWdown_final = GLDAS_NOAH025_3H_${dt}_SWdown"
     # Wind speed (no conversion required)
     r.mapcalc "GLDAS_NOAH025_3H_${dt}_Wind_final = GLDAS_NOAH025_3H_${dt}_Wind"
+    ## Specific humidity re saved
+    r.mapcalc "GLDAS_NOAH025_3H_${dt}_Qair_final = GLDAS_NOAH025_3H_${dt}_Qair"
     ## Pressure convert from pa to mb
     r.mapcalc "GLDAS_NOAH025_3H_${dt}_Psurf_final = GLDAS_NOAH025_3H_${dt}_Psurf / 100"
     ## Humidity according to the url: https://earthscience.stackexchange.com/questions/2360/how-do-i-convert-specific-humidity-to-relative-humidity
-    r.mapcalc "es = 6.112 * exp((17.67 * GLDAS_NOAH025_3H_${dt}_Tair_final) / (GLDAS_NOAH025_3H_${dt}_Tair_final + 243.5))" --o
+    r.mapcalc "es = 6.112 * exp((17.67 * GLDAS_NOAH025_3H_${dt}_Tair_final) / (GLDAS_NOAH025_3H_${dt}_Tair_final + 243.5))"
     r.mapcalc "e = (GLDAS_NOAH025_3H_${dt}_Qair_final * GLDAS_NOAH025_3H_${dt}_Psurf_final) / (0.378 * GLDAS_NOAH025_3H_${dt}_Qair_final + 0.622)"
     r.mapcalc "GLDAS_NOAH025_3H_${dt}_Rh = (e / es) * 100"
     # Final Relative humidity in %
@@ -334,10 +337,17 @@ You can copy the entire code in the above snippet to command line and enter to r
 <br>
 Copy all the code in the above snippet and paste into notepad. Save it as "myscript.sh". <br>
 <br>
-Follow the below command to run the script.
+Many times there will be trailing space issues when you save a script/text file in windows and try to run the script in Linux. This can be solved by removing the spaces by using a light weight tool called <hlt>dos2unix</hlt> <br>
+<br>
+
+Follow the below code snippet to install dos2unix, use dos2unix to remove the trailing spaces from the script and finally to run the script. <note>Note that the installing dos2unix step is required only once.</note>
 
     <pre><code class="neutral">
-# run the following command to run the above saved script file
+# Run the following command to install dos2unix
+sudo apt-get install dos2unix
+# Below command removes the trailing spaces from your script
+dos2unix myscript.sh
+# Run the following command to run the above saved script file
 sh myscript.sh
 # press enter
     </code></pre>
@@ -357,9 +367,9 @@ t1="0600"
 t2="0900"
 ### COMPUTING THE INSTANTANEOUS USING AVERAGE OF 9:00 and 12:00
 r.series input="GLDAS_NOAH025_3H_A${dt}.${t1}_Tair_final,GLDAS_NOAH025_3H_A${dt}.${t2}_Tair_final" output=GLDAS_NOAH025_3H_A${dt}_Tair_inst method=average
-r.series input="GLDAS_NOAH025_3H_A${dt}.${t1}_SWdown_final,GLDAS_NOAH025_3H_A${dt}.${t2}_SWdown_final" output=GLDAS_NOAH025_3H_A{dt}_SWdown_inst method=average
-r.series input="GLDAS_NOAH025_3H_A2${dt}.${t1}_Wind_final,GLDAS_NOAH025_3H_A${dt}.${t2}_Wind_final" output=GLDAS_NOAH025_3H_A{dt}_Wind_inst method=average
-r.series input="GLDAS_NOAH025_3H_A${dt}.${t1}_Rh_final,GLDAS_NOAH025_3H_A${dt}.${t2}_Rh_final" output=GLDAS_NOAH025_3H_A{dt}_Rh_inst method=average		
+r.series input="GLDAS_NOAH025_3H_A${dt}.${t1}_SWdown_final,GLDAS_NOAH025_3H_A${dt}.${t2}_SWdown_final" output=GLDAS_NOAH025_3H_A${dt}_SWdown_inst method=average
+r.series input="GLDAS_NOAH025_3H_A2${dt}.${t1}_Wind_final,GLDAS_NOAH025_3H_A${dt}.${t2}_Wind_final" output=GLDAS_NOAH025_3H_A${dt}_Wind_inst method=average
+r.series input="GLDAS_NOAH025_3H_A${dt}.${t1}_Rh_final,GLDAS_NOAH025_3H_A${dt}.${t2}_Rh_final" output=GLDAS_NOAH025_3H_A${dt}_Rh_inst method=average		
     </code></pre>
     <b>Daily Average</b> <br>
 
